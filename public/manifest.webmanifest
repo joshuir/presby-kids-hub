@@ -1,18 +1,10 @@
 {
-  "name": "Presby Kids",
-  "short_name": "PresbyKids",
-  "description": "Children’s church website with resources, classes, and parent dashboard.",
+  "name": "Presbyterian Children's Ministry",
+  "short_name": "Children's Ministry",
+  "description": "Bible-centred Sunday classes for ages 3 to 13, Bible games and our clothing collection.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
+  "background_color": "#FBFAF7",
   "theme_color": "#2563EB",
-  "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "icons": [{ "src": "/brand/logo.png", "sizes": "160x180", "type": "image/png" }]
 }
-

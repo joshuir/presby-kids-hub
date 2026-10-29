@@ -94,7 +94,7 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
           check();
         }}
       >
-        <div className="font-[family-name:var(--font-heading)] text-2xl">Choose a new password</div>
+        <div className="font-display text-2xl">Choose a new password</div>
         <input className={input} type="password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password (8+ characters)" autoComplete="new-password" />
         {msg ? <Msg {...msg} /> : null}
         <Button type="submit" disabled={busy}>Save password</Button>
@@ -105,7 +105,7 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
   if (state === "out") {
     return shell(
       <>
-        <div className="font-[family-name:var(--font-heading)] text-2xl">
+        <div className="font-display text-2xl">
           {mode === "signin" ? "Admin sign in" : mode === "signup" ? "Create your admin account" : "Reset your password"}
         </div>
         <p className="mt-2 text-sm text-black/70">
@@ -206,7 +206,7 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
             }
           }}
         >
-          <div className="font-[family-name:var(--font-heading)] text-2xl">Set up the main admin</div>
+          <div className="font-display text-2xl">Set up the main admin</div>
           <p className="text-sm text-black/70">
             You’re signed in as <b>{who.email}</b>. Enter the one-time setup code to make this the main admin account.
           </p>
@@ -220,7 +220,7 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
     }
     return shell(
       <>
-        <div className="font-[family-name:var(--font-heading)] text-2xl">No admin access yet</div>
+        <div className="font-display text-2xl">No admin access yet</div>
         <p className="mt-2 text-sm text-black/70">
           You’re signed in as <b>{who.email}</b>, but this email hasn’t been given access (or access was turned off).
           Ask the main admin to add this exact email in <b>CMS → Sub-admins</b>, then reload this page.

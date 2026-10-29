@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { AboutPage } from "@/components/about/AboutPage";
+import { AboutPage } from "@/components/pages/AboutPage";
 
 export const metadata: Metadata = {
-  title: "About",
-  description: "Our mission, vision, teachers, child safety policies and age groups.",
+  title: "About Us",
+  description: "Meet the teachers of Presbyterian Children's Ministry, read our story since 2006, and discover the vision and mission behind our Sunday classes.",
 };
 
 export default function Page() {

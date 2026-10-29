@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
-import { ShopLoader } from "@/components/shop/ShopLoader";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Collection",
-  description: "Presby Kids clothing — tees, hoodies and more in your favourite colours.",
-};
+import { useEffect } from "react";
 
-export default function ShopPage() {
-  return <ShopLoader />;
+/** Old address — the collection now lives at /collection/. */
+export default function Page() {
+  useEffect(() => {
+    location.replace("/collection/" + location.search);
+  }, []);
+  return <p className="p-10 text-center">Taking you to the clothing collection…</p>;
 }

@@ -7,7 +7,7 @@ import { getPublic } from "@/lib/cms/client";
 import type { ProductDoc } from "@/lib/cms/types";
 import { CollectionShowcase } from "./CollectionShowcase";
 import { LoadError, Loading } from "@/components/site/LoadState";
-import { SectionBar } from "@/components/site/SectionNav";
+import Link from "next/link";
 
 const ClothingRack3D = dynamic(() => import("./ClothingRack3D"), {
   ssr: false,
@@ -30,7 +30,7 @@ export function ShopLoader() {
   const [request, setRequest] = useState<{ index: number; seq: number }>({ index: 0, seq: 0 });
   const [shuffleSeq, setShuffleSeq] = useState(0);
   const [gl, setGl] = useState(false);
-  const headRef = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLElement>(null);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -61,18 +61,22 @@ export function ShopLoader() {
   const ticker = ["New drops", "Accra", ...products.map((p) => p.name)].join(" • ").toUpperCase();
 
   return (
-    <div className="bg-[#EEEDE8]">
-      <SectionBar className="bg-[#EEEDE8]/80" />
-      {gl && products.length ? (
-        <section ref={headRef} className="relative mx-auto max-w-6xl px-4 pt-8 sm:px-10" aria-label="Clothing rack">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <div data-rack-in className="text-[11px] font-bold uppercase tracking-[0.25em] text-black/50">Presby Kids • Collection</div>
-              <h1 data-rack-in className="font-[family-name:var(--font-ui)] text-3xl font-extrabold uppercase tracking-tight sm:text-5xl">The Rack</h1>
-            </div>
-            <p data-rack-in className="max-w-xs text-xs font-semibold text-black/55">Tap a hanger or drag the rail to browse. Pick colours, flip front/back and shuffle below.</p>
+    <div className="-mt-[76px] bg-[#EEEDE8] pt-[76px]">
+      <nav aria-label="Breadcrumb" className="mx-auto max-w-6xl px-4 pt-6 text-sm font-bold text-black/50 sm:px-10">
+        <Link href="/games/" className="hover:text-black">Kids Zone</Link> <span aria-hidden>›</span> <span className="text-black">Clothing Collection</span>
+      </nav>
+      <section ref={headRef} className="relative mx-auto max-w-6xl px-4 pt-6 sm:px-10" aria-label="Clothing rack">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div data-rack-in className="text-[11px] font-bold uppercase tracking-[0.25em] text-black/50">Children&apos;s Ministry • Collection</div>
+            <h1 data-rack-in className="font-display text-4xl font-extrabold uppercase tracking-tight sm:text-6xl">The Rack</h1>
           </div>
-          <div data-rack-in className="mt-2 h-[300px] sm:h-[400px]">
+          <p data-rack-in className="max-w-xs text-sm font-semibold text-black/55">
+            {gl ? "Tap a hanger or drag the rail to browse. " : ""}Pick colours, flip front/back and shuffle below.
+          </p>
+        </div>
+        {gl && products.length ? (
+          <div data-rack-in className="mt-2 h-[280px] sm:h-[400px]">
             <ClothingRack3D
               products={products}
               index={view.index}
@@ -82,8 +86,8 @@ export function ShopLoader() {
               onSelect={(i) => setRequest((r) => ({ index: i, seq: r.seq + 1 }))}
             />
           </div>
-        </section>
-      ) : null}
+        ) : null}
+      </section>
       <CollectionShowcase products={products} ticker={ticker} onState={onState} request={request} onShuffle={() => setShuffleSeq((n) => n + 1)} />
     </div>
   );

@@ -1,26 +1,30 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Container } from "@/components/site/Container";
-import { BibleGame } from "@/components/games/BibleGame";
-import { SectionBar } from "@/components/site/SectionNav";
+import { BibleQuest } from "@/components/games/BibleQuest";
 
 export const metadata: Metadata = {
   title: "Bible Games",
-  description: "Play Bible quizzes from the Old and New Testaments — earn XP, keep your streak and climb the leaderboard.",
+  description: "Climb the Bible path: story units with four levels each, streaks, badges, a leaderboard and a mascot who cheers you on.",
 };
 
 export default function GamesPage() {
   return (
-    <div className="bg-[#F8F8F8] pb-28">
-      <SectionBar />
-      <Container className="py-10 sm:py-14">
-        <div className="mb-8 max-w-2xl">
-          <h1 className="font-[family-name:var(--font-heading)] text-4xl tracking-tight sm:text-5xl">Bible Games</h1>
-          <p className="mt-3 text-base leading-7 text-black/70">
-            Pick a mascot, choose a level and test what you know about stories from Genesis to Acts.
-            Earn XP, unlock harder levels and new mascots, and keep your daily streak going!
-          </p>
+    <div className="pb-10">
+      <Container className="pt-8 sm:pt-12">
+        <nav aria-label="Breadcrumb" className="text-sm font-bold text-ink/50">
+          <span>Kids Zone</span> <span aria-hidden>›</span> <span className="text-ink">Bible Games</span>
+        </nav>
+        <div className="mb-8 mt-3 flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-2xl">
+            <h1 className="font-display text-5xl font-extrabold sm:text-6xl">Bible Games</h1>
+            <p className="mt-3 text-lg leading-8 text-ink/65">
+              Pick a mascot, follow the path through Bible stories from Genesis to Acts, and unlock harder levels as you go. Earn XP, badges and keep your streak alive!
+            </p>
+          </div>
+          <Link href="/collection/" className="btn btn-ghost !py-2.5 text-sm">👕 Clothing Collection</Link>
         </div>
-        <BibleGame />
+        <BibleQuest />
       </Container>
     </div>
   );

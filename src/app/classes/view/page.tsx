@@ -1,21 +1,14 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { ClassView } from "@/components/classes/ClassView";
+import { ClassPage } from "@/components/pages/ClassPage";
 import { Loading } from "@/components/site/LoadState";
-import { SectionBar } from "@/components/site/SectionNav";
 
-export const metadata: Metadata = {
-  title: "Class",
-  description: "This week’s lesson, story media, downloads and lesson archive.",
-};
+export const metadata: Metadata = { title: "Class", description: "This week's lesson, your teachers and every previous lesson." };
 
-export default function ClassViewPage() {
+export default function Page() {
   return (
-    <>
-      <SectionBar current="Class hub" />
-      <Suspense fallback={<Loading />}>
-        <ClassView />
-      </Suspense>
-    </>
+    <Suspense fallback={<Loading />}>
+      <ClassPage />
+    </Suspense>
   );
 }

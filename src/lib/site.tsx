@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { getPublic } from "@/lib/cms/client";
-import { seedSettings } from "@/lib/cms/seed/pages";
+import { seedSettings } from "@/lib/cms/seed/content";
 import type { SiteSettingsDoc } from "@/lib/cms/types";
 
 /** Site-wide settings (contact details, hero text, service times…) from the CMS. */
@@ -23,13 +23,23 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
 
 export const useSettings = () => useContext(Ctx);
 
-/** "Label|Value" pairs used for stats. */
-export function splitPair(s: string) {
-  const [a, b] = s.split("|");
-  return { label: (a ?? "").trim(), value: (b ?? "").trim() };
-}
+/** "a|b|c" → ["a","b","c"] (trimmed). */
+export const parts = (s: string) => (s ?? "").split("|").map((x) => x.trim());
 
 export function waLink(num: string, text = "") {
   const n = num.replace(/[^\d]/g, "");
   return `https://wa.me/${n}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+}
+
+export function telLink(num: string) {
+  return `tel:${num.replace(/[^\d+]/g, "")}`;
+}
+
+export function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
 }

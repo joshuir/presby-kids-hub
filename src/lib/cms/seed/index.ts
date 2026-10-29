@@ -1,174 +1,18 @@
-import type {
-  ClassDoc,
-  LessonDoc,
-  MascotDoc,
-  ProductDoc,
-  LeaderboardDoc,
-  CollectionName,
-} from "../types";
+import type { CollectionName, LeaderboardDoc, MascotDoc, ProductDoc } from "../types";
+import {
+  seedClasses,
+  seedEvents,
+  seedFaqs,
+  seedGallery,
+  seedLessons,
+  seedMilestones,
+  seedPosts,
+  seedSettings,
+  seedTeachers,
+  seedUnits,
+} from "./content";
 
-
-const t = "2026-10-28T00:00:00.000Z";
-
-export const seedClasses: ClassDoc[] = [
-  { id: "beg-1", group: "Beginners", name: "Beginners 1", ageRange: "Ages 2–3", focus: "Foundations: worship, simple Bible stories, kindness.", teacher: "Teacher A", schedule: "Sundays • 9:00 AM", color: "#F59E0B", order: 1, status: "published" },
-  { id: "beg-2", group: "Beginners", name: "Beginners 2", ageRange: "Ages 4–5", focus: "Bible stories, prayer routines, listening & sharing.", teacher: "Teacher A", schedule: "Sundays • 9:00 AM", color: "#F97316", order: 2, status: "published" },
-  { id: "pri-1", group: "Primary", name: "Primary 1", ageRange: "Ages 6–7", focus: "Bible overview, memory verses, interactive activities.", teacher: "Teacher B", schedule: "Sundays • 9:00 AM", color: "#22C55E", order: 3, status: "published" },
-  { id: "pri-2", group: "Primary", name: "Primary 2", ageRange: "Ages 8–9", focus: "Character, discipleship habits, Bible reading basics.", teacher: "Teacher B", schedule: "Sundays • 9:00 AM", color: "#10B981", order: 4, status: "published" },
-  { id: "pri-3", group: "Primary", name: "Primary 3", ageRange: "Ages 10–11", focus: "Gospel clarity, prayer, service and teamwork.", teacher: "Teacher B", schedule: "Sundays • 9:00 AM", color: "#06B6D4", order: 5, status: "published" },
-  { id: "jun", group: "Juniors", name: "Juniors", ageRange: "Ages 12–13", focus: "Discussion-based learning and spiritual disciplines.", teacher: "Teacher C", schedule: "Sundays • 9:00 AM", color: "#3B82F6", order: 6, status: "published" },
-  { id: "sen-1", group: "Seniors", name: "Seniors 1", ageRange: "Ages 14–15", focus: "Christian identity, apologetics basics, mentorship.", teacher: "Teacher C", schedule: "Sundays • 9:00 AM", color: "#8B5CF6", order: 7, status: "published" },
-  { id: "sen-2", group: "Seniors", name: "Seniors 2", ageRange: "Ages 16–17", focus: "Leadership, service projects, deeper Bible study.", teacher: "Teacher C", schedule: "Sundays • 9:00 AM", color: "#EC4899", order: 8, status: "published" },
-];
-
-type LessonSeed = Pick<
-  LessonDoc,
-  "title" | "bibleRef" | "memoryVerse" | "mainThrust" | "description" | "objectives"
->;
-
-const stories: Record<string, LessonSeed> = {
-  eden: {
-    title: "God Made a Beautiful Garden",
-    bibleRef: "Genesis 2–3",
-    memoryVerse: "“God saw all that he had made, and it was very good.” — Genesis 1:31",
-    mainThrust: "God made everything good and wants us to trust and obey Him.",
-    description: "Adam and Eve live in God’s garden. They choose to disobey, yet God still cares for them.",
-    objectives: ["Name things God made", "Say why obeying God matters", "Know that God still loves us when we fail"],
-  },
-  jonah: {
-    title: "Jonah Runs, God Rescues",
-    bibleRef: "Jonah 1–3",
-    memoryVerse: "“Salvation comes from the Lord.” — Jonah 2:9",
-    mainThrust: "We cannot run away from God, and He gives second chances.",
-    description: "Jonah runs from God’s call, is swallowed by a great fish, prays, and finally obeys.",
-    objectives: ["Retell Jonah’s journey in order", "Explain what Jonah learned", "Practise saying sorry to God in prayer"],
-  },
-  abraham: {
-    title: "Abraham Trusts God",
-    bibleRef: "Genesis 22:1–19",
-    memoryVerse: "“The Lord will provide.” — Genesis 22:14",
-    mainThrust: "God tests our faith and always provides what we truly need.",
-    description: "God tests Abraham, and at the mountain God provides a ram in Isaac’s place.",
-    objectives: ["Describe how Abraham showed trust", "Identify how God provided", "Connect the story to Jesus, God’s provision"],
-  },
-  gideon: {
-    title: "Gideon: Mighty Through God",
-    bibleRef: "Judges 6",
-    memoryVerse: "“The Lord is with you, mighty warrior.” — Judges 6:12",
-    mainThrust: "God uses ordinary people who trust Him to do great things.",
-    description: "Israel is oppressed by Midian; the angel of the Lord calls fearful Gideon to lead.",
-    objectives: ["Explain why Israel cried out to God", "Describe Gideon’s fears and God’s answer", "Name one way God can use you"],
-  },
-  sinai: {
-    title: "God Gives the Ten Commandments",
-    bibleRef: "Exodus 19–20",
-    memoryVerse: "“You shall have no other gods before me.” — Exodus 20:3",
-    mainThrust: "God’s laws show us how to love Him and love others.",
-    description: "At Mount Sinai God meets His people and gives them His covenant laws.",
-    objectives: ["List the Ten Commandments", "Group them into love for God and love for others", "Apply one commandment this week"],
-  },
-  josiah: {
-    title: "Young King Josiah Finds God’s Word",
-    bibleRef: "2 Kings 22–23",
-    memoryVerse: "“Your word is a lamp for my feet.” — Psalm 119:105",
-    mainThrust: "When we hear God’s Word, we should respond with humility and obedience.",
-    description: "During Temple repairs the Book of the Law is found, and Josiah leads the nation back to God.",
-    objectives: ["Tell how the Book of the Law was found", "Explain Josiah’s response", "Commit to reading God’s Word"],
-  },
-  solomon: {
-    title: "David’s Charge to Solomon",
-    bibleRef: "1 Kings 2:1–4",
-    memoryVerse: "“Be strong, act like a man, and observe what the Lord your God requires.” — 1 Kings 2:2–3",
-    mainThrust: "True leadership begins with walking faithfully with God.",
-    description: "Before he dies, David tells Solomon to be strong and keep God’s commands.",
-    objectives: ["Summarise David’s instructions", "Describe a godly leader", "Choose one leadership habit to practise"],
-  },
-  nicodemus: {
-    title: "Jesus and Nicodemus",
-    bibleRef: "John 3:1–21",
-    memoryVerse: "“For God so loved the world that he gave his one and only Son…” — John 3:16",
-    mainThrust: "To see God’s kingdom we must be born again through faith in Jesus.",
-    description: "A religious leader visits Jesus at night and learns about new birth and God’s love.",
-    objectives: ["Explain what ‘born again’ means", "Memorise John 3:16", "Discuss light and darkness in the passage"],
-  },
-  richman: {
-    title: "The Rich Young Man",
-    bibleRef: "Matthew 19:16–30",
-    memoryVerse: "“With God all things are possible.” — Matthew 19:26",
-    mainThrust: "Following Jesus means loving Him more than anything we own.",
-    description: "A wealthy young man asks Jesus about eternal life but walks away sad.",
-    objectives: ["Identify what the young man lacked", "Discuss treasure in heaven", "Name things that compete for our heart"],
-  },
-  philippi: {
-    title: "Paul and Silas Sing in Prison",
-    bibleRef: "Acts 16:16–34",
-    memoryVerse: "“Believe in the Lord Jesus, and you will be saved.” — Acts 16:31",
-    mainThrust: "God is at work even in hard places; praise opens doors.",
-    description: "Paul and Silas are jailed, worship at midnight, and the jailer’s family is saved.",
-    objectives: ["Retell the events at Philippi", "Explain why the jailer believed", "Practise praising God in difficulty"],
-  },
-  emmaus: {
-    title: "The Road to Emmaus",
-    bibleRef: "Luke 24:13–35",
-    memoryVerse: "“Were not our hearts burning within us…?” — Luke 24:32",
-    mainThrust: "The risen Jesus walks with us and opens the Scriptures to us.",
-    description: "Two disciples meet the risen Jesus on the road and recognise Him when He breaks bread.",
-    objectives: ["Explain why the disciples were sad", "Show how Jesus used Scripture", "Share the good news of the resurrection"],
-  },
-  entry: {
-    title: "Jesus Rides into Jerusalem",
-    bibleRef: "Luke 19:28–40",
-    memoryVerse: "“Blessed is the king who comes in the name of the Lord!” — Luke 19:38",
-    mainThrust: "Jesus is the humble King who deserves our praise.",
-    description: "Jesus rides a colt into Jerusalem while crowds praise God.",
-    objectives: ["Describe the triumphal entry", "Explain why Jesus rode a colt", "Write a short praise to King Jesus"],
-  },
-};
-
-// Which stories each class has: [current, ...archived]
-const plan: Record<string, string[]> = {
-  "beg-1": ["eden", "jonah"],
-  "beg-2": ["jonah", "eden"],
-  "pri-1": ["abraham", "gideon"],
-  "pri-2": ["gideon", "sinai"],
-  "pri-3": ["sinai", "entry"],
-  jun: ["josiah", "philippi"],
-  "sen-1": ["nicodemus", "richman"],
-  "sen-2": ["solomon", "emmaus"],
-};
-
-function lessonFor(classId: string, key: string, idx: number): LessonDoc {
-  const s = stories[key];
-  const date = new Date(Date.UTC(2026, 10, 1) - idx * 7 * 86400000)
-    .toISOString()
-    .slice(0, 10);
-  const id = `${classId}-${key}`;
-  return {
-    id,
-    classId,
-    ...s,
-    flyerUrl: "", // empty = auto-generated artwork
-    bannerUrl: "",
-    introVideoUrl: "",
-    storyMedia: [
-      { type: "image", url: "art:scene:1", caption: s.bibleRef },
-      { type: "image", url: "art:scene:2", caption: s.mainThrust },
-    ],
-    resources: [
-      { label: "Lesson notes (printable)", url: `/worksheet/?lesson=${id}&type=notes`, kind: "notes" },
-      { label: "Worksheet & quiz", url: `/worksheet/?lesson=${id}&type=worksheet`, kind: "worksheet" },
-      { label: "Colouring & activity sheet", url: `/worksheet/?lesson=${id}&type=activity`, kind: "activity" },
-    ],
-    lessonDate: date,
-    status: idx === 0 ? "published" : "archived",
-    createdAt: t,
-    updatedAt: t,
-  };
-}
-
-export const seedLessons: LessonDoc[] = Object.entries(plan).flatMap(([cid, keys]) =>
-  keys.map((k, i) => lessonFor(cid, k, i)),
-);
+export * from "./content";
 
 export const seedMascots: MascotDoc[] = [
   { id: "lamb", name: "Lumi the Lamb", emoji: "🐑", color: "#F1F5F9", unlockXp: 0, description: "Gentle and brave — a great first friend.", status: "published" },
@@ -260,28 +104,17 @@ export const seedProducts: ProductDoc[] = [
 
 export const seedLeaderboard: LeaderboardDoc[] = [];
 
-import {
-  seedConstitution,
-  seedEvents,
-  seedMilestones,
-  seedPolicies,
-  seedPosts,
-  seedSettings,
-  seedTeachers,
-  seedTestimonials,
-} from "./pages";
-
 export const SEEDS: Record<CollectionName, Array<{ id: string }>> = {
   settings: seedSettings,
   teachers: seedTeachers,
   posts: seedPosts,
   events: seedEvents,
-  testimonials: seedTestimonials,
+  gallery: seedGallery,
+  faqs: seedFaqs,
   milestones: seedMilestones,
-  constitution: seedConstitution,
-  policies: seedPolicies,
   classes: seedClasses,
   lessons: seedLessons,
+  units: seedUnits,
   questions: [], // loaded on demand from ./questions.json (large)
   mascots: seedMascots,
   products: seedProducts,

@@ -9,6 +9,7 @@ export type GameQuestion = {
   question: string;
   answer: string;
   options: string[];
+  explain?: string;
 };
 
 export type GameMascot = {
@@ -48,6 +49,8 @@ export type Player = {
   roundsPlayed: number;
   correctTotal: number;
   answeredTotal: number;
+  /** learning-path progress: node id → best accuracy (0–100) */
+  path?: Record<string, number>;
 };
 
 export const DIFFICULTIES: { key: Difficulty; label: string; xp: number; unlockXp: number; color: string }[] = [
@@ -81,6 +84,8 @@ export const ACHIEVEMENTS: { id: string; label: string; icon: string; desc: stri
   { id: "xp1500", label: "Bible Champion", icon: "🏆", desc: "Earn 1,500 XP" },
   { id: "expert", label: "Expert Unlocked", icon: "🧠", desc: "Unlock Expert level" },
   { id: "all-stories", label: "Story Master", icon: "🌟", desc: "Complete every story" },
+  { id: "unit-champion", label: "Unit Champion", icon: "🏅", desc: "Beat a unit challenge" },
+  { id: "path-finisher", label: "Path Finisher", icon: "🗺️", desc: "Beat every unit on the path" },
 ];
 
 export const STORY_DONE_AT = 5; // correct answers needed to "complete" a story

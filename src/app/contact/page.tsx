@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { ContactPage } from "@/components/contact/ContactPage";
+import { ContactPage } from "@/components/pages/ContactPage";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contact the children’s church team. Send a message, call, WhatsApp, see service times and get directions.",
+  description: "Visit Presbyterian Children's Ministry at the Presbyterian Church, Accra. Call, WhatsApp or email us, or send a message to our children's ministry team.",
 };
 
 export default function Page() {

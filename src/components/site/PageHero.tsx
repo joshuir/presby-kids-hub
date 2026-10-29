@@ -3,36 +3,61 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { Container } from "./Container";
-import { SectionNav } from "./SectionNav";
+import { Eyebrow } from "@/components/ui/Reveal";
+import { cn } from "@/lib/cn";
 
-/** Blue banner used at the top of inner pages, with a short GSAP entrance. */
-export function PageHero({ eyebrow, title, intro, children, breadcrumb }: { eyebrow?: string; title: string; intro?: string; children?: React.ReactNode; breadcrumb?: string }) {
+/**
+ * Inner-page hero in the reference style: eyebrow chip, big display title with a
+ * word-by-word GSAP entrance, short intro, optional chips/children, dotted background.
+ */
+export function PageHero({
+  eyebrow,
+  title,
+  intro,
+  children,
+  art,
+  className,
+}: {
+  eyebrow?: string;
+  title: string;
+  intro?: string;
+  children?: React.ReactNode;
+  art?: React.ReactNode;
+  className?: string;
+}) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ctx = gsap.context(() => {
-      gsap.from("[data-ph]", { y: 24, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.08 });
-      gsap.to("[data-ph-orb]", { y: -18, x: 10, duration: 5, yoyo: true, repeat: -1, ease: "sine.inOut", stagger: 1.2 });
+      gsap.from("[data-w]", { yPercent: 110, opacity: 0, duration: 0.7, ease: "power4.out", stagger: 0.06 });
+      gsap.from("[data-ph]", { y: 18, opacity: 0, duration: 0.6, ease: "power3.out", delay: 0.25, stagger: 0.08 });
     }, el);
     return () => ctx.revert();
-  }, []);
+  }, [title]);
   return (
-    <section ref={ref} className="bg-hero-blue relative overflow-hidden text-white">
-      <span data-ph-orb className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-blueBrand-400/30 blur-2xl" />
-      <span data-ph-orb className="pointer-events-none absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-sun-400/20 blur-2xl" />
-      <Container className="relative pb-14 pt-6 sm:pb-20 sm:pt-8">
-        <div data-ph className="mb-8 sm:mb-10">
-          <SectionNav tone="dark" current={breadcrumb} />
+    <section ref={ref} className={cn("relative overflow-hidden", className)}>
+      <div aria-hidden className="dot-grid absolute inset-0 [mask-image:linear-gradient(180deg,#000_30%,transparent)]" />
+      <div aria-hidden className="absolute -right-24 top-0 h-80 w-80 rounded-full bg-blueBrand-200/40 blur-3xl" />
+      <Container className="relative grid items-center gap-10 pb-12 pt-12 sm:pb-16 sm:pt-16 lg:grid-cols-[1.3fr_1fr]">
+        <div>
+          {eyebrow ? (
+            <div data-ph>
+              <Eyebrow>{eyebrow}</Eyebrow>
+            </div>
+          ) : null}
+          <h1 className="mt-4 font-display text-[2.6rem] font-extrabold leading-[1] sm:text-6xl lg:text-7xl" aria-label={title}>
+            {title.split(" ").map((w, i) => (
+              <span key={i} aria-hidden className="inline-block overflow-hidden pb-1 align-bottom">
+                <span data-w className="inline-block pr-[0.22em]">{w}</span>
+              </span>
+            ))}
+          </h1>
+          {intro ? <p data-ph className="mt-5 max-w-xl text-lg leading-8 text-ink/65">{intro}</p> : null}
+          {children ? <div data-ph className="mt-6">{children}</div> : null}
         </div>
-        {eyebrow ? <div data-ph className="text-xs font-extrabold uppercase tracking-[0.2em] text-blueBrand-200">{eyebrow}</div> : null}
-        <h1 data-ph className="mt-2 max-w-3xl font-[family-name:var(--font-heading)] text-4xl leading-tight sm:text-5xl text-balance">{title}</h1>
-        {intro ? <p data-ph className="mt-4 max-w-2xl text-base leading-7 text-white/75 sm:text-lg">{intro}</p> : null}
-        {children ? <div data-ph className="mt-6">{children}</div> : null}
+        {art ? <div data-ph className="hidden lg:block">{art}</div> : null}
       </Container>
-      <svg className="relative block w-full text-white" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden>
-        <path d="M0 40V20C360-6 1080-6 1440 20v20z" fill="currentColor" />
-      </svg>
     </section>
   );
 }

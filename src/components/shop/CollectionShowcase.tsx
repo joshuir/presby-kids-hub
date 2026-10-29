@@ -192,7 +192,7 @@ export function CollectionShowcase({
   return (
     <div className="relative overflow-hidden bg-[#EEEDE8]" ref={stageRef}>
       <div
-        className="relative mx-auto grid min-h-[calc(100dvh-4rem)] max-w-6xl grid-rows-[1fr_auto] px-4 pb-16 pt-6 sm:px-10"
+        className="relative mx-auto grid max-w-6xl grid-rows-[1fr_auto] px-4 pb-16 pt-2 sm:min-h-[calc(100dvh-4rem)] sm:px-10 sm:pt-6"
         onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
         onTouchEnd={(e) => {
           if (touchX.current == null) return;
@@ -275,7 +275,7 @@ export function CollectionShowcase({
 
         {/* info */}
         <div ref={titleRef} className="mt-4 flex flex-col items-center gap-3 text-center">
-          <h2 className="font-[family-name:var(--font-ui)] text-lg font-extrabold uppercase tracking-wide sm:text-2xl">{product.name}</h2>
+          <h2 className="font-display text-lg font-extrabold uppercase tracking-wide sm:text-2xl">{product.name}</h2>
           <div className="text-sm font-semibold text-black/70">
             {money(product)} · <span className={cn("rounded-full px-2 py-0.5 text-xs", avail.tone)}>{avail.label}</span>
           </div>
@@ -326,7 +326,7 @@ export function CollectionShowcase({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold uppercase tracking-widest text-black/50">{colorway?.name}</div>
-                <div className="font-[family-name:var(--font-ui)] text-xl font-extrabold uppercase">{product.name}</div>
+                <div className="font-display text-xl font-extrabold uppercase">{product.name}</div>
                 <div className="mt-1 font-semibold">{money(product)}</div>
               </div>
               <button type="button" onClick={() => setShowAvail(false)} className="text-[11px] font-bold uppercase tracking-widest">
@@ -356,7 +356,7 @@ export function CollectionShowcase({
               })}
             </div>
             <a
-              href={`/contact/?subject=${encodeURIComponent(`Order: ${product.name} — ${colorway?.name ?? ""}${size ? ` — size ${size}` : ""}`)}`}
+              href={`/contact/?subject=${encodeURIComponent("Clothing collection")}&message=${encodeURIComponent(`I’d like to request: ${product.name} — ${colorway?.name ?? ""}${size ? ` — size ${size}` : ""}`)}#form-title`}
               className={cn(
                 "mt-5 block rounded-full bg-black px-6 py-3 text-center text-sm font-bold uppercase tracking-widest text-white",
                 !size && "pointer-events-none opacity-40",

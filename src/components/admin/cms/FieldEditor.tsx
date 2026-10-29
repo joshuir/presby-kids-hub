@@ -92,11 +92,13 @@ export function FieldEditor({
   doc,
   set,
   classes,
+  lookups = {},
 }: {
   field: Field;
   doc: Doc;
   set: (key: string, value: unknown) => void;
   classes: { id: string; name: string }[];
+  lookups?: Record<string, { id: string; name: string }[]>;
 }) {
   const v = doc[field.key];
   const label = (
@@ -156,6 +158,61 @@ export function FieldEditor({
           </select>
         </label>
       );
+    case "ref": {
+      const opts = lookups[field.source ?? ""] ?? [];
+      return (
+        <label className="block">
+          {label}
+          <select className={input} value={String(v ?? "")} onChange={(e) => set(field.key, e.target.value)}>
+            <option value="">— None —</option>
+            {opts.map((o) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
+          {help}
+        </label>
+      );
+    }
+    case "refs": {
+      const opts = lookups[field.source ?? ""] ?? [];
+      const cur = Array.isArray(v) ? (v as string[]) : [];
+      return (
+        <fieldset className="block">
+          <legend className="mb-1 block text-xs font-bold uppercase tracking-wide text-black/55">{field.label}</legend>
+          <div className="flex flex-wrap gap-1.5">
+            {opts.map((o) => {
+              const on = cur.includes(o.id);
+              return (
+                <label key={o.id} className={cn("cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold ring-1", on ? "bg-blueBrand-600 text-white ring-transparent" : "bg-white ring-black/15")}>
+                  <input type="checkbox" className="sr-only" checked={on} onChange={() => set(field.key, on ? cur.filter((x) => x !== o.id) : [...cur, o.id])} />
+                  {o.name}
+                </label>
+              );
+            })}
+          </div>
+          {help}
+        </fieldset>
+      );
+    }
+    case "imageList": {
+      const list = Array.isArray(v) ? (v as string[]) : [];
+      return (
+        <div>
+          {label}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {list.map((u, i) => (
+              <div key={u + i} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={u} alt="" className="aspect-square w-full rounded-xl object-cover ring-1 ring-black/10" />
+                <button type="button" aria-label="Remove picture" onClick={() => set(field.key, list.filter((_, j) => j !== i))} className="absolute right-1 top-1 rounded-full bg-white px-2 text-xs font-bold text-red-700 shadow">×</button>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2"><UploadButton accept="image/*" label="+ Add picture" onUploaded={(u) => set(field.key, [...list, u])} /></div>
+          {help}
+        </div>
+      );
+    }
     case "color":
       return (
         <label className="block">
@@ -252,18 +309,20 @@ export function FieldEditor({
                   <option value="notes">Lesson notes</option>
                   <option value="worksheet">Worksheet</option>
                   <option value="activity">Activity sheet</option>
+                  <option value="image">Colouring / image</option>
+                  <option value="audio">Song / audio</option>
                   <option value="other">Other</option>
                 </select>
                 <div className="flex gap-1">
-                  <UploadButton accept=".pdf,.doc,.docx,image/*" label="Replace" onUploaded={(u) => update(list.map((x, j) => (j === i ? { ...x, url: u } : x)))} />
+                  <UploadButton accept=".pdf,.doc,.docx,image/*,audio/mpeg" label="Replace" onUploaded={(u) => update(list.map((x, j) => (j === i ? { ...x, url: u } : x)))} />
                   <button type="button" className="rounded-xl px-2 text-xs font-bold text-red-700 ring-1 ring-red-200" onClick={() => update(list.filter((_, j) => j !== i))}>Delete</button>
                 </div>
               </div>
             ))}
             <UploadButton
-              accept=".pdf,.doc,.docx,image/*"
-              label="+ Upload download (PDF/Word/image)"
-              onUploaded={(u, f) => update([...list, { label: f.name.replace(/\.[a-z0-9]+$/i, ""), url: u, kind: /work/i.test(f.name) ? "worksheet" : /activ|colou?r/i.test(f.name) ? "activity" : "notes" }])}
+              accept=".pdf,.doc,.docx,image/*,audio/mpeg"
+              label="+ Upload download (PDF/Word/image/MP3)"
+              onUploaded={(u, f) => update([...list, { label: f.name.replace(/\.[a-z0-9]+$/i, ""), url: u, kind: f.type.startsWith("audio") ? "audio" : f.type.startsWith("image") ? "image" : /work/i.test(f.name) ? "worksheet" : /activ/i.test(f.name) ? "activity" : "notes" }])}
             />
           </div>
         </div>

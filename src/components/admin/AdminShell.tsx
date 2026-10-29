@@ -26,7 +26,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             >
               ← Public site
             </Link>
-            <span className="text-sm font-[family-name:var(--font-heading)]">
+            <span className="text-sm font-display">
               Admin Dashboard
             </span>
             {session ? (

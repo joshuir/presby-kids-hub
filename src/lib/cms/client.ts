@@ -18,13 +18,17 @@ let client: SupabaseClient | null = null;
 export function supa() {
   if (!client) {
     client = createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: true, autoRefreshToken: true, storageKey: "kh-cms-auth" },
+      auth: { persistSession: true, autoRefreshToken: true, storageKey: "cm-cms-auth" },
     });
   }
   return client;
 }
 
 type ContentCol = Exclude<CollectionName, "leaderboard">;
+
+/** This site keeps its content in its own namespace so other sites sharing the database are never affected. */
+const NS = "cm.";
+const ns = (col: string) => NS + col;
 
 async function seedFor<C extends ContentCol>(col: C): Promise<DocFor<C>[]> {
   if (col === "questions") {
@@ -50,12 +54,12 @@ export function getPublic<C extends ContentCol>(col: C): Promise<DocFor<C>[]> {
     cache.set(
       key,
       (async () => {
-        const { data, error } = await supa().rpc("kh_public_collection", { col });
+        const { data, error } = await supa().rpc("kh_public_collection", { col: ns(col) });
         if (error) throw new Error(errMsg(error));
         const items = (data ?? []) as DocFor<C>[];
         if (items.length) return items;
         // Nothing saved yet → show the starter content
-        const { data: has } = await supa().rpc("kh_public_has", { col });
+        const { data: has } = await supa().rpc("kh_public_has", { col: ns(col) });
         if (has) return items;
         const seed = await seedFor(col);
         return seed.filter(
@@ -84,8 +88,8 @@ export async function submitScore(p: Record<string, unknown>) {
   return data as number;
 }
 
-export async function submitForm(kind: "contact" | "register" | "order", data: Record<string, unknown>) {
-  const { error } = await supa().rpc("kh_submit_form", { kind, data });
+export async function submitForm(kind: "contact" | "register" | "order" | "subscribe", data: Record<string, unknown>) {
+  const { error } = await supa().rpc("kh_submit_form", { kind, data: { ...data, site: "cm" } });
   if (error) throw new Error(errMsg(error));
 }
 
@@ -104,7 +108,7 @@ export async function whoami(): Promise<WhoAmI | null> {
 }
 
 async function adminRaw<C extends ContentCol>(col: C): Promise<{ value: DocFor<C>[]; version: number }> {
-  const { data, error } = await supa().rpc("kh_admin_get", { col });
+  const { data, error } = await supa().rpc("kh_admin_get", { col: ns(col) });
   if (error) throw new Error(errMsg(error));
   if (!data) {
     const seed = await seedFor(col);
@@ -125,7 +129,7 @@ export async function adminMutate<C extends ContentCol>(col: C, fn: (docs: DocFo
   for (let i = 0; i < 4; i++) {
     const { value, version } = await adminRaw(col);
     const next = fn([...value]);
-    const { error } = await supa().rpc("kh_admin_put", { col, v: next, expected: version });
+    const { error } = await supa().rpc("kh_admin_put", { col: ns(col), v: next, expected: version });
     if (!error) {
       cache.delete(`pub:${col}`);
       return next;
@@ -199,7 +203,7 @@ export function downloadUrl(url: string) {
 
 export async function uploadMedia(file: File) {
   const safe = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").slice(-60);
-  const path = `${Date.now().toString(36)}-${safe}`;
+  const path = `cm/${Date.now().toString(36)}-${safe}`;
   const { error } = await supa().storage.from("media").upload(path, file, {
     contentType: file.type || undefined,
     cacheControl: "31536000",
@@ -210,9 +214,9 @@ export async function uploadMedia(file: File) {
 }
 
 export async function listMedia() {
-  const { data, error } = await supa().storage.from("media").list("", { limit: 1000, sortBy: { column: "created_at", order: "desc" } });
+  const { data, error } = await supa().storage.from("media").list("cm", { limit: 1000, sortBy: { column: "created_at", order: "desc" } });
   if (error) throw new Error(errMsg(error));
-  return (data ?? []).filter((f) => f.id).map((f) => ({ key: f.name, url: mediaUrl(f.name) }));
+  return (data ?? []).filter((f) => f.id).map((f) => ({ key: `cm/${f.name}`, url: mediaUrl(`cm/${f.name}`) }));
 }
 
 export async function deleteMedia(key: string) {

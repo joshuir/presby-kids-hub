@@ -1,60 +1,71 @@
-import type { EventDoc } from "@/lib/cms/types";
+import type { EventDoc, LessonDoc } from "@/lib/cms/types";
 
 export function fmtDate(d: string, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" }) {
   if (!d) return "";
-  const dt = new Date(d.length === 10 ? d + "T12:00:00" : d);
+  const dt = new Date(d.length === 10 ? d + "T12:00:00" : d.length === 7 ? d + "-15T12:00:00" : d);
   return isNaN(dt.getTime()) ? d : dt.toLocaleDateString("en-GB", opts);
 }
+
+export function fmtTime(t: string) {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  const ap = h >= 12 ? "pm" : "am";
+  return `${((h + 11) % 12) + 1}:${String(m || 0).padStart(2, "0")} ${ap}`;
+}
+
+export const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 export function eventStart(e: EventDoc) {
   return new Date(`${e.date}T${e.startTime || "09:00"}:00`);
 }
 
-export function upcoming(events: EventDoc[], now = new Date()) {
-  const today = new Date(now.toDateString());
-  return events.filter((e) => new Date(e.date + "T23:59:59") >= today).sort((a, b) => +eventStart(a) - +eventStart(b));
+export function upcoming(events: EventDoc[], from = todayISO()) {
+  return events.filter((e) => e.date >= from).sort((a, b) => +eventStart(a) - +eventStart(b));
+}
+
+/** Lessons for one class, newest first, and the current one (latest on/before today, else the earliest upcoming). */
+export function classLessons(lessons: LessonDoc[], classId: string) {
+  const list = lessons.filter((l) => l.classId === classId).sort((a, b) => b.lessonDate.localeCompare(a.lessonDate));
+  const t = todayISO();
+  const current = list.find((l) => l.lessonDate <= t) ?? list[list.length - 1];
+  return { list, current, previous: list.filter((l) => l !== current && l.lessonDate <= (current?.lessonDate ?? t)) };
 }
 
 function stamp(d: Date) {
   return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
 
-export function googleCalUrl(e: EventDoc) {
+export function googleCalUrl(e: EventDoc, location = "") {
   const start = eventStart(e);
-  const end = e.endTime ? new Date(`${e.date}T${e.endTime}:00`) : new Date(+start + 3600_000);
+  const end = e.endTime ? new Date(`${e.date}T${e.endTime}:00`) : new Date(+start + 2 * 3600_000);
   const p = new URLSearchParams({
     action: "TEMPLATE",
     text: e.title,
     dates: `${stamp(start)}/${stamp(end)}`,
     details: e.description,
-    location: e.location,
+    location: [e.location, location].filter(Boolean).join(", "),
   });
   return `https://calendar.google.com/calendar/render?${p}`;
 }
 
-export function downloadIcs(e: EventDoc) {
-  const start = eventStart(e);
-  const end = e.endTime ? new Date(`${e.date}T${e.endTime}:00`) : new Date(+start + 3600_000);
+export function icsFor(events: EventDoc[]) {
   const esc = (s: string) => s.replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
-  const ics = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Presby Kids Hub//EN",
-    "BEGIN:VEVENT",
-    `UID:${e.id}@presby-kids-hub`,
-    `DTSTAMP:${stamp(new Date())}`,
-    `DTSTART:${stamp(start)}`,
-    `DTEND:${stamp(end)}`,
-    `SUMMARY:${esc(e.title)}`,
-    `DESCRIPTION:${esc(e.description)}`,
-    `LOCATION:${esc(e.location)}`,
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
-  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+  const body = events.flatMap((e) => {
+    const start = eventStart(e);
+    const end = e.endTime ? new Date(`${e.date}T${e.endTime}:00`) : new Date(+start + 2 * 3600_000);
+    return ["BEGIN:VEVENT", `UID:${e.id}@pcm-kids`, `DTSTAMP:${stamp(new Date())}`, `DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`, `SUMMARY:${esc(e.title)}`, `DESCRIPTION:${esc(e.description)}`, `LOCATION:${esc(e.location)}`, "END:VEVENT"];
+  });
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Children's Ministry//EN", ...body, "END:VCALENDAR"].join("\r\n");
+}
+
+export function downloadIcs(events: EventDoc[], name: string) {
+  const url = URL.createObjectURL(new Blob([icsFor(events)], { type: "text/calendar" }));
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${e.id}.ics`;
+  a.download = `${name}.ics`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

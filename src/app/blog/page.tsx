@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { BlogList } from "@/components/blog/BlogList";
+import { FeedPage } from "@/components/pages/FeedPage";
 
 export const metadata: Metadata = {
-  title: "Blog",
-  description: "Kids Bible stories, family devotionals, parent guides and printable activities.",
+  title: "Blog & Feed",
+  description: "News, memory verses, photos and short videos from Children's Ministry teachers — a safe, moderated feed for families.",
 };
 
 export default function Page() {
-  return <BlogList />;
+  return <FeedPage />;
 }

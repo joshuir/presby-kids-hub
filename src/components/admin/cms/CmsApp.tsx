@@ -10,39 +10,35 @@ import { AccountPanel, SubAdminsPanel } from "./TeamPanels";
 import { useAdmin } from "@/components/admin/AdminGate";
 import { adminDelete, adminList, adminReset, adminUpsert, adminUpsertMany, deleteMedia, listMedia, rpc } from "@/lib/cms/client";
 import { MessagesPanel } from "./MessagesPanel";
-import { AnalyticsPanel } from "./AnalyticsPanel";
-import { ParentsPanel } from "./ParentsPanel";
 import type { ProductDoc } from "@/lib/cms/types";
 
 type Doc = Record<string, unknown> & { id?: string; status?: Status; publishAt?: string; updatedAt?: string };
-type Tab = Exclude<CollectionName, never> | "media" | "team" | "account" | "messages" | "parents" | "analytics";
-const PANEL_TABS = ["media", "team", "account", "messages", "parents", "analytics"] as const;
+type Tab = Exclude<CollectionName, never> | "media" | "team" | "account" | "messages";
+const PANEL_TABS = ["media", "team", "account", "messages"] as const;
 const isPanel = (t: Tab) => (PANEL_TABS as readonly string[]).includes(t);
 /** database permission section that guards each tab */
-const PERM: Partial<Record<Tab, string>> = { settings: "pages", testimonials: "pages", milestones: "pages", constitution: "pages", policies: "pages", posts: "blog" };
-const ORDERED = ["classes", "products", "teachers", "testimonials", "milestones", "constitution", "policies"];
+const PERM: Partial<Record<Tab, string>> = { settings: "pages", faqs: "pages", milestones: "pages", posts: "blog", units: "questions" };
+const ORDERED = ["classes", "products", "teachers", "milestones", "faqs", "gallery", "units"];
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: "analytics", label: "Analytics", icon: "📈" },
-  { key: "lessons", label: "Lessons", icon: "📚" },
-  { key: "classes", label: "Classes", icon: "🏫" },
-  { key: "questions", label: "Game questions", icon: "❓" },
-  { key: "mascots", label: "Mascots", icon: "🦁" },
-  { key: "leaderboard", label: "Leaderboard", icon: "🏆" },
-  { key: "products", label: "Clothing", icon: "👕" },
-  { key: "settings", label: "Site & pages", icon: "⚙️" },
-  { key: "posts", label: "Blog", icon: "📝" },
-  { key: "events", label: "Events", icon: "📅" },
-  { key: "teachers", label: "Teachers", icon: "👩‍🏫" },
-  { key: "policies", label: "Safety policies", icon: "🛡️" },
-  { key: "testimonials", label: "Testimonials", icon: "💬" },
-  { key: "milestones", label: "History", icon: "🕰️" },
-  { key: "constitution", label: "Constitution", icon: "📜" },
-  { key: "parents", label: "Parents", icon: "👨‍👩‍👧" },
-  { key: "media", label: "Media library", icon: "🖼️" },
-  { key: "messages", label: "Messages", icon: "✉️" },
-  { key: "team", label: "Sub-admins", icon: "👥" },
-  { key: "account", label: "My account", icon: "🔑" },
+const TABS: { key: Tab; label: string; icon: string; group: string }[] = [
+  { key: "settings", label: "Site & pages", icon: "⚙️", group: "Website" },
+  { key: "classes", label: "Classes", icon: "🏫", group: "Website" },
+  { key: "lessons", label: "Lessons", icon: "📚", group: "Website" },
+  { key: "teachers", label: "Teachers", icon: "👩‍🏫", group: "Website" },
+  { key: "events", label: "Events", icon: "📅", group: "Website" },
+  { key: "posts", label: "Feed posts", icon: "📝", group: "Website" },
+  { key: "gallery", label: "Gallery", icon: "📸", group: "Website" },
+  { key: "faqs", label: "FAQs", icon: "❔", group: "Website" },
+  { key: "milestones", label: "History", icon: "🕰️", group: "Website" },
+  { key: "units", label: "Game units", icon: "🗺️", group: "Kids Zone" },
+  { key: "questions", label: "Game questions", icon: "❓", group: "Kids Zone" },
+  { key: "mascots", label: "Mascots", icon: "🦁", group: "Kids Zone" },
+  { key: "leaderboard", label: "Leaderboard", icon: "🏆", group: "Kids Zone" },
+  { key: "products", label: "Clothing", icon: "👕", group: "Kids Zone" },
+  { key: "media", label: "Media library", icon: "🖼️", group: "Admin" },
+  { key: "messages", label: "Messages", icon: "✉️", group: "Admin" },
+  { key: "team", label: "Sub-admins", icon: "👥", group: "Admin" },
+  { key: "account", label: "My account", icon: "🔑", group: "Admin" },
 ];
 
 const STATUS_STYLE: Record<string, string> = {
@@ -120,6 +116,7 @@ export function CmsApp() {
   const [tab, setTab] = useState<Tab>(() => visibleTabs[0]?.key ?? "lessons");
   const [items, setItems] = useState<Doc[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  const [lookups, setLookups] = useState<Record<string, { id: string; name: string }[]>>({});
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Doc | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -163,6 +160,27 @@ export function CmsApp() {
       .catch(() => {});
   }, []);
 
+  // option lists for "pick a teacher / class / event / lesson" fields
+  useEffect(() => {
+    const need: Record<string, string> = { teachers: "teachers", classes: "classes", events: "events", lessons: "lessons" };
+    const want = new Set(
+      (SCHEMAS[tab as Exclude<CollectionName, "leaderboard">] ?? []).filter((f) => f.source).map((f) => f.source as string),
+    );
+    want.forEach((src) => {
+      api<{ items: Doc[] }>(`/api/cms/${need[src]}`)
+        .then((d) =>
+          setLookups((cur) => ({
+            ...cur,
+            [src]: d.items.map((x) => ({
+              id: String(x.id),
+              name: src === "lessons" ? `${x.title} — ${x.classId} (${x.lessonDate})` : src === "events" ? `${x.title} (${x.date})` : String(x.name ?? x.title),
+            })),
+          })),
+        )
+        .catch(() => {});
+    });
+  }, [tab]);
+
   // warn before leaving with unsaved changes
   useEffect(() => {
     const h = (e: BeforeUnloadEvent) => {
@@ -175,11 +193,6 @@ export function CmsApp() {
   const save = async (doc: Doc, patch: Partial<Doc> = {}, msg = "Saved") => {
     if (isPanel(tab)) return;
     const body = { ...doc, ...patch };
-    if (tab === "posts") {
-      body.slug = String(body.slug || body.title || "")
-        .toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
-      if (items.some((d) => d.slug === body.slug && d.id !== body.id)) return notify("Another article already uses that URL slug", "err");
-    }
     if (tab === "settings") Object.assign(body, { id: "site", status: "published" });
     // validation
     const schema = tab !== "leaderboard" ? SCHEMAS[tab as Exclude<CollectionName, "leaderboard">] : [];
@@ -195,9 +208,20 @@ export function CmsApp() {
       if (!opts.includes(String(body.answer ?? "").trim())) return notify("Select the correct answer", "err");
       body.options = opts;
     }
+    const clean = (k: string) => {
+      if (Array.isArray(body[k])) body[k] = (body[k] as string[]).map((x) => String(x).trim()).filter(Boolean);
+    };
     if (tab === "lessons") {
-      body.objectives = ((body.objectives as string[]) ?? []).map((s) => s.trim()).filter(Boolean);
+      ["discussion", "activitySteps"].forEach(clean);
+      body.slug = String(body.slug || body.title || "")
+        .toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+      if (items.some((d) => d.slug === body.slug && d.classId === body.classId && d.id !== body.id))
+        return notify("This class already has a lesson with that URL name", "err");
+      if (!body.id) body.id = `${body.classId}-${body.slug}`;
     }
+    if (tab === "teachers") clean("highlights");
+    if (tab === "units") clean("stories");
+    if (tab === "settings") ["heroWords", "serviceTimes", "stats", "sundaySteps", "groups", "missionItems", "socials"].forEach(clean);
     if (tab === "products") {
       body.sizes = ((body.sizes as string[]) ?? []).map((s) => s.trim()).filter(Boolean);
     }
@@ -256,14 +280,16 @@ export function CmsApp() {
   const stories = useMemo(() => (tab === "questions" ? [...new Set(items.map((d) => String(d.story)))].sort() : []), [items, tab]);
 
   const previewUrl = (d: Doc) => {
-    if (tab === "lessons" && d.classId) return `/classes/view/?id=${d.classId}&preview=${d.id}`;
-    if (tab === "classes") return `/classes/view/?id=${d.id}`;
-    if (tab === "products") return "/shop/";
-    if (tab === "questions" || tab === "mascots" || tab === "leaderboard") return "/games/";
-    if (tab === "posts") return `/blog/post/?slug=${d.slug}`;
+    if (tab === "lessons" && d.classId) return `/classes/lesson/?c=${d.classId}&l=${d.slug}&preview=${d.id}`;
+    if (tab === "classes") return `/classes/view/?c=${d.id}`;
+    if (tab === "products") return "/collection/";
+    if (tab === "questions" || tab === "mascots" || tab === "leaderboard" || tab === "units") return "/games/";
+    if (tab === "posts") return `/blog/#${d.id}`;
     if (tab === "events") return `/events/#${d.id}`;
-    if (tab === "teachers" || tab === "policies") return "/about/";
-    if (tab === "milestones" || tab === "constitution") return "/history-constitution/";
+    if (tab === "gallery") return `/gallery/?album=${d.id}`;
+    if (tab === "teachers") return `/about/?teacher=${d.id}#teachers`;
+    if (tab === "milestones") return "/about/#history";
+    if (tab === "faqs") return "/contact/";
     return "/";
   };
 
@@ -271,13 +297,16 @@ export function CmsApp() {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-[family-name:var(--font-heading)] text-3xl">Content manager</h1>
+          <h1 className="font-display text-3xl">Content manager</h1>
           <p className="text-sm text-black/60">Changes save to the database and appear on the live website straight away — no redeploy needed.</p>
         </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {visibleTabs.map((t) => (
+        {visibleTabs.map((t, i) => [
+          i === 0 || visibleTabs[i - 1].group !== t.group ? (
+            <span key={`g-${t.group}`} className="self-center whitespace-nowrap pl-2 pr-1 text-[10px] font-extrabold uppercase tracking-widest text-black/40">{t.group}</span>
+          ) : null,
           <button
             key={t.key}
             type="button"
@@ -292,15 +321,11 @@ export function CmsApp() {
             )}
           >
             {t.icon} {t.label}
-          </button>
-        ))}
+          </button>,
+        ])}
       </div>
 
-      {tab === "analytics" ? (
-        <AnalyticsPanel notify={notify} classes={classes} />
-      ) : tab === "parents" ? (
-        <ParentsPanel notify={notify} classes={classes} />
-      ) : tab === "messages" ? (
+      {tab === "messages" ? (
         <MessagesPanel notify={notify} />
       ) : tab === "team" ? (
         <SubAdminsPanel notify={notify} />
@@ -382,10 +407,12 @@ export function CmsApp() {
                         {tab === "leaderboard" && `${d.xp} XP · 🔥${d.streak} · ${(d.achievements as unknown[])?.length ?? 0} badges`}
                         {tab === "classes" && `${d.group} · ${d.ageRange}`}
                         {tab === "mascots" && `${d.emoji} · unlocks at ${d.unlockXp} XP`}
-                        {tab === "posts" && `${d.category} · ${d.date}`}
+                        {tab === "posts" && `${d.kind} · ${d.date}${d.pinned === "yes" ? " · pinned" : ""}`}
+                        {tab === "gallery" && `${d.category} · ${d.date}`}
+                        {tab === "faqs" && String(d.category ?? "")}
+                        {tab === "units" && `${d.icon} · ${d.testament} · ${(d.stories as unknown[])?.length || "all"} stories`}
                         {tab === "events" && `${d.date} · ${d.location}`}
                         {tab === "teachers" && String(d.role ?? "")}
-                        {tab === "testimonials" && String(d.role ?? "")}
                       </span>
                     </button>
                   </li>
@@ -432,7 +459,7 @@ export function CmsApp() {
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/5 pb-3">
                   <div>
                     <div className="text-xs font-bold uppercase tracking-wider text-black/40">{editing.id ? "Editing" : "New"} · {tab}</div>
-                    <div className="font-[family-name:var(--font-heading)] text-xl">{titleOf(tab as CollectionName, editing) || "Untitled"}</div>
+                    <div className="font-display text-xl">{titleOf(tab as CollectionName, editing) || "Untitled"}</div>
                     {editing.updatedAt ? <div className="text-xs text-black/40">Last saved {new Date(String(editing.updatedAt)).toLocaleString()}</div> : null}
                   </div>
                   <span className={cn("rounded-full px-3 py-1 text-xs font-bold uppercase", STATUS_STYLE[effectiveStatus(editing)])}>
@@ -468,6 +495,7 @@ export function CmsApp() {
                           field={f}
                           doc={editing}
                           classes={classes}
+                          lookups={lookups}
                           set={(k, v) => {
                             setEditing((cur) => ({ ...(cur ?? {}), [k]: v }));
                             setDirty(true);

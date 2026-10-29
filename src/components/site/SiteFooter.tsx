@@ -1,83 +1,117 @@
 "use client";
 
 import Link from "next/link";
-import { Container } from "@/components/site/Container";
-import { LogoMark } from "@/components/site/Logo";
-import { OPEN_COOKIE_SETTINGS } from "@/components/site/CookieBanner";
-import { useSettings, waLink } from "@/lib/site";
-import { SITE_NAV } from "@/lib/nav";
+import { usePathname } from "next/navigation";
+import { Mail, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { Container } from "./Container";
+import { Logo } from "./Logo";
+import { socialIcon } from "./Social";
+import { NAV } from "@/lib/nav";
+import { parts, telLink, useSettings, waLink } from "@/lib/site";
 
 export function SiteFooter() {
   const s = useSettings();
-  const socials = [
-    { k: "Facebook", v: s.facebook },
-    { k: "YouTube", v: s.youtube },
-    { k: "Instagram", v: s.instagram },
-  ].filter((x) => x.v);
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
+  const times = s.serviceTimes.map(parts);
+  const groups = s.groups.map(parts);
+  const socials = s.socials.map(parts).filter((x) => x[3]);
+
   return (
-    <footer className="relative mt-24 overflow-hidden bg-navy-900 text-white">
-      <svg className="absolute -top-px left-0 w-full text-white" viewBox="0 0 1440 48" preserveAspectRatio="none" aria-hidden>
-        <path d="M0 0h1440v16c-240 32-480 32-720 16S240 0 0 24z" fill="currentColor" />
-      </svg>
-      <Container className="relative grid gap-10 pb-10 pt-20 md:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
-        <div>
-          <div className="flex items-center gap-3">
-            <LogoMark size={44} />
+    <footer className="mt-24">
+      {/* visit band */}
+      <Container>
+        <div id="visit" className="relative scroll-mt-28 overflow-hidden rounded-[2rem] bg-blueBrand-600 px-6 py-10 text-white sm:px-12 sm:py-14">
+          <span aria-hidden className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/10" />
+          <span aria-hidden className="absolute -bottom-16 right-32 h-40 w-40 rounded-full bg-sun/30" />
+          <div className="relative grid items-center gap-8 lg:grid-cols-[1.2fr_1fr]">
             <div>
-              <div className="font-[family-name:var(--font-heading)] text-xl">{s.siteName}</div>
-              <div className="text-xs text-white/60">{s.churchName}</div>
+              <span className="eyebrow bg-white/15 text-white">Visit us</span>
+              <h2 className="mt-3 font-display text-4xl font-extrabold leading-[1.05] sm:text-5xl text-balance">Come as you are this Sunday.</h2>
+              <ul className="mt-5 grid gap-2 text-white/90">
+                {times.map(([a, b]) => (
+                  <li key={a} className="flex flex-wrap gap-x-2">
+                    <span className="font-bold">{a}</span>
+                    <span className="text-white/75">{b}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-          <p className="mt-4 max-w-sm text-sm leading-6 text-white/70">{s.tagline} A safe, joyful and Bible-centred place for children to grow in faith.</p>
-          {socials.length ? (
-            <div className="mt-4 flex gap-2">
-              {socials.map((x) => (
-                <a key={x.k} href={x.v} target="_blank" rel="noreferrer" className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">
-                  {x.k}
+            <div className="flex flex-wrap gap-3 lg:justify-end">
+              <Link href="/contact/#form-title" className="btn btn-sun">{s.ctaLabel}</Link>
+              {s.whatsapp ? (
+                <a href={waLink(s.whatsapp)} target="_blank" rel="noreferrer" className="btn bg-white text-ink shadow-[0_4px_0_rgba(0,0,0,.2)]">
+                  WhatsApp us
                 </a>
-              ))}
+              ) : null}
             </div>
-          ) : null}
-        </div>
-        <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-8 md:col-span-2">
-          {SITE_NAV.filter((x) => x.children).map((sec) => {
-            const Icon = sec.icon;
-            return (
-              <div key={sec.key}>
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blueBrand-200">
-                  <Icon className="h-4 w-4" aria-hidden /> {sec.label}
-                </div>
-                <ul className="mt-3 grid gap-2 text-sm text-white/75">
-                  {sec.children!.map((c) => (
-                    <li key={c.href}><Link className="rounded hover:text-white focus-ring" href={c.href}>{c.label}</Link></li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </nav>
-        <div className="rounded-3xl bg-white/[0.06] p-5 ring-1 ring-white/10">
-          <div className="text-xs font-bold uppercase tracking-widest text-blueBrand-200">Visit us</div>
-          <ul className="mt-3 grid gap-1.5 text-sm text-white/80">
-            {s.serviceTimes.map((x) => <li key={x}>🕘 {x}</li>)}
-            <li>📍 {s.address}</li>
-          </ul>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {s.phone ? <a href={`tel:${s.phone.replace(/\s/g, "")}`} className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-navy-900">Call</a> : null}
-            {s.whatsapp ? <a href={waLink(s.whatsapp)} target="_blank" rel="noreferrer" className="rounded-full bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white">WhatsApp</a> : null}
-            {s.email ? <a href={`mailto:${s.email}`} className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold">Email</a> : null}
           </div>
         </div>
       </Container>
-      <Container className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 py-5 text-xs text-white/50">
-        <span>© {new Date().getFullYear()} {s.siteName}</span>
-        <span className="flex gap-4">
-          <button type="button" className="hover:text-white" onClick={() => window.dispatchEvent(new Event(OPEN_COOKIE_SETTINGS))}>Cookie settings</button>
-          <Link href="/privacy/" className="hover:text-white">Privacy & cookies</Link>
-          <Link href="/terms/" className="hover:text-white">Terms</Link>
-          <Link href="/admin/" className="hover:text-white">Admin</Link>
-        </span>
-      </Container>
+
+      <div className="mt-16 bg-ink text-white">
+        <Container className="grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.3fr]">
+          <div>
+            <Logo name={s.siteName} sub={s.churchName} light size={46} />
+            <p className="mt-4 max-w-sm text-sm leading-6 text-white/65">{s.footerBlurb}</p>
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold">
+              <ShieldCheck className="h-4 w-4 text-mint" aria-hidden /> All teachers safeguarding-trained
+            </p>
+            <ul className="mt-5 flex flex-wrap gap-2" aria-label="Social media">
+              {socials.map(([network, handle, , url]) => {
+                const [Icon] = socialIcon(network);
+                return (
+                  <li key={network}>
+                    <a href={url} target="_blank" rel="noreferrer" aria-label={`${network} — ${handle}`} className="grid h-10 w-10 place-items-center rounded-full bg-white/10 transition hover:bg-white/20">
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <nav aria-label="Footer">
+            <h2 className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/50">Explore</h2>
+            <ul className="mt-4 grid gap-2.5 text-sm text-white/80">
+              {NAV.flatMap((n) => (n.children ? n.children.map((c) => ({ href: c.href, label: c.label })) : [{ href: n.href, label: n.label }])).map((n) => (
+                <li key={n.href}><Link className="hover:text-white" href={n.href}>{n.label}</Link></li>
+              ))}
+            </ul>
+          </nav>
+          <div>
+            <h2 className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/50">Classes</h2>
+            <ul className="mt-4 grid gap-2.5 text-sm text-white/80">
+              {groups.map(([key, label, ages]) => (
+                <li key={key}>
+                  <Link className="hover:text-white" href={`/classes/#${key}`}>
+                    {label} <span className="text-white/45">{ages}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2 className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/50">Get in touch</h2>
+            <ul className="mt-4 grid gap-3 text-sm text-white/80">
+              {s.phone ? <li><a className="flex gap-2 hover:text-white" href={telLink(s.phone)}><Phone className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{s.phone}</a></li> : null}
+              {s.email ? <li><a className="flex gap-2 break-all hover:text-white" href={`mailto:${s.email}`}><Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{s.email}</a></li> : null}
+              <li><Link className="flex gap-2 hover:text-white" href="/contact/#map"><MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{s.address}</Link></li>
+            </ul>
+          </div>
+        </Container>
+        <div className="border-t border-white/10">
+          <Container className="flex flex-col gap-3 py-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+            <span>© {new Date().getFullYear()} Presbyterian Children&apos;s Ministry · {s.churchName}, Accra</span>
+            <ul className="flex flex-wrap gap-x-5 gap-y-2">
+              <li><Link href="/privacy/" className="hover:text-white">Privacy</Link></li>
+              <li><Link href="/terms/" className="hover:text-white">Terms</Link></li>
+              <li><Link href="/safeguarding/" className="hover:text-white">Safeguarding</Link></li>
+              <li><Link href="/accessibility/" className="hover:text-white">Accessibility</Link></li>
+              <li><Link href="/admin/" className="hover:text-white">Staff login</Link></li>
+            </ul>
+          </Container>
+        </div>
+      </div>
     </footer>
   );
 }

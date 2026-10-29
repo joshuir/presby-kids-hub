@@ -6,6 +6,7 @@ export type CollectionName =
   | "classes"
   | "lessons"
   | "questions"
+  | "units"
   | "mascots"
   | "products"
   | "leaderboard"
@@ -13,26 +14,13 @@ export type CollectionName =
   | "teachers"
   | "posts"
   | "events"
-  | "testimonials"
-  | "milestones"
-  | "constitution"
-  | "policies";
+  | "gallery"
+  | "faqs"
+  | "milestones";
 
 export const COLLECTIONS: CollectionName[] = [
-  "classes",
-  "lessons",
-  "questions",
-  "mascots",
-  "products",
-  "leaderboard",
-  "settings",
-  "teachers",
-  "posts",
-  "events",
-  "testimonials",
-  "milestones",
-  "constitution",
-  "policies",
+  "classes", "lessons", "questions", "units", "mascots", "products", "leaderboard",
+  "settings", "teachers", "posts", "events", "gallery", "faqs", "milestones",
 ];
 
 export type BaseDoc = {
@@ -41,14 +29,16 @@ export type BaseDoc = {
   updatedAt?: string;
 };
 
-export type ClassGroupKey = "Beginners" | "Primary" | "Juniors" | "Seniors";
+export type ClassGroupKey = "beginners" | "primary" | "juniors" | "seniors";
 
 export type ClassDoc = BaseDoc & {
   name: string;
   group: ClassGroupKey;
-  ageRange: string;
-  focus: string;
-  teacher: string;
+  number: number; // 1, 2, 3 within the group
+  ageRange: string; // "Age 3–4"
+  description: string;
+  room: string;
+  teacherIds: string[];
   schedule: string;
   color: string;
   order: number;
@@ -59,25 +49,31 @@ export type MediaItem = { type: "image" | "video"; url: string; caption?: string
 export type ResourceItem = {
   label: string;
   url: string;
-  kind: "notes" | "worksheet" | "activity" | "other";
+  kind: "notes" | "worksheet" | "activity" | "audio" | "image" | "other";
 };
 
 export type LessonDoc = BaseDoc & {
   classId: string;
+  slug: string;
   title: string;
-  description: string;
+  lessonDate: string; // YYYY-MM-DD
   bibleRef: string;
-  memoryVerse: string;
-  objectives: string[];
-  mainThrust: string;
-  flyerUrl: string;
+  topic: string;
+  objective: string;
+  memoryVerse: string; // text only
+  memoryRef: string;
+  story: string; // paragraphs separated by blank lines
+  discussion: string[];
+  activityTitle: string;
+  activitySteps: string[];
+  prayer: string;
   bannerUrl: string;
+  flyerUrl: string;
   introVideoUrl: string;
   storyMedia: MediaItem[];
   resources: ResourceItem[];
-  lessonDate: string; // YYYY-MM-DD
   status: Status;
-  publishAt?: string; // ISO, used when status === "scheduled"
+  publishAt?: string;
 };
 
 export type Difficulty = "easy" | "medium" | "hard" | "expert";
@@ -90,6 +86,20 @@ export type QuestionDoc = BaseDoc & {
   question: string;
   answer: string;
   options: string[];
+  /** shown after answering, e.g. the verse */
+  explain?: string;
+  status: Status;
+};
+
+/** A game category ("unit") on the learning path. */
+export type UnitDoc = BaseDoc & {
+  title: string;
+  description: string;
+  icon: string; // emoji
+  color: string;
+  testament: "OT" | "NT" | "Both";
+  stories: string[]; // story names this unit draws questions from (empty = all in testament)
+  order: number;
   status: Status;
 };
 
@@ -144,56 +154,81 @@ export type SiteSettingsDoc = BaseDoc & {
   status: Status;
   siteName: string;
   churchName: string;
-  tagline: string;
-  heroTitle: string;
+  footerBlurb: string;
+  ctaLabel: string;
+  heroBadge: string;
+  heroTitle: string; // use *word* to highlight
+  heroWords: string[]; // rotating words
   heroSubtitle: string;
   heroImage: string;
-  welcomeVideoUrl: string;
-  mission: string;
+  serviceTimes: string[]; // "Sunday Children's Service|9:00 – 10:45 am"
+  welcomeTitle: string;
+  welcomeText: string;
+  welcomeName: string;
+  welcomeRole: string;
+  stats: string[]; // "age-based classes|9"
+  sundayTitle: string;
+  sundayIntro: string;
+  sundaySteps: string[]; // "Worship together|Songs, actions and prayer…"
+  sundayImage: string;
+  groups: string[]; // "beginners|Beginners|Ages 3–5|Short stories, songs…"
+  featuredLessonId: string;
+  aboutTitle: string;
+  aboutSubtitle: string;
   vision: string;
-  values: string[];
-  background: string;
-  serviceTimes: string[];
-  address: string;
-  mapQuery: string;
+  missionIntro: string;
+  missionItems: string[]; // "Teach the whole Bible|A three-year teaching plan…"
+  historyTitle: string;
+  historyPdf: string;
+  appTitle: string;
+  appText: string;
+  googlePlayUrl: string;
+  appStoreUrl: string;
+  showApp: string; // "yes" | "no"
+  socials: string[]; // "Facebook|@pcm.kids|Like our page|https://facebook.com/"
   phone: string;
   whatsapp: string;
   email: string;
-  facebook: string;
-  youtube: string;
-  instagram: string;
-  constitutionPdf: string;
-  historyIntro: string;
-  impactStats: string[]; // "Families served|120+"
-  announcement: string;
+  address: string;
+  mapQuery: string;
+  newsletterTitle: string;
+  newsletterText: string;
+  safeguardingBody: string;
+  accessibilityBody: string;
   privacyBody: string;
   termsBody: string;
+  pagesUpdated: string;
+  welcomeVideoUrl: string;
 };
 
 export type TeacherDoc = BaseDoc & {
   name: string;
   role: string;
+  team: string; // beginners | primary | juniors | seniors | leadership
   classIds: string[];
+  since: string;
   bio: string;
+  highlights: string[];
   photo: string;
   order: number;
   status: Status;
 };
 
-export type PostCategory = "Bible Stories" | "Devotionals" | "Parent Guides" | "Kids Activities";
+export type PostKind = "verse" | "photo" | "video" | "news" | "event";
 
 export type PostDoc = BaseDoc & {
-  title: string;
-  slug: string;
-  category: PostCategory;
-  excerpt: string;
-  body: string; // simple markdown: paragraphs, ## headings, - lists, **bold**
-  cover: string;
+  kind: PostKind;
+  authorId: string; // teacher id
+  body: string;
+  verse: string;
+  verseRef: string;
+  images: string[];
   videoUrl: string;
   audioUrl: string;
-  author: string;
-  date: string;
-  tags: string[];
+  eventId: string;
+  date: string; // YYYY-MM-DD
+  reactions: Record<string, number>;
+  pinned: string; // "yes" | "no"
   status: Status;
   publishAt?: string;
 };
@@ -206,16 +241,28 @@ export type EventDoc = BaseDoc & {
   location: string;
   description: string;
   image: string;
-  category: string;
+  category: string; // "Special days" | "Family" | …
   registerUrl: string;
   status: Status;
   publishAt?: string;
 };
 
-export type TestimonialDoc = BaseDoc & {
-  quote: string;
-  name: string;
-  role: string;
+export type GalleryDoc = BaseDoc & {
+  title: string;
+  category: string;
+  date: string; // YYYY-MM
+  cover: string;
+  media: MediaItem[];
+  description: string;
+  featured: string; // "yes" | "no"
+  order: number;
+  status: Status;
+};
+
+export type FaqDoc = BaseDoc & {
+  question: string;
+  answer: string;
+  category: string; // Visiting | Classes | Safety | Parents
   order: number;
   status: Status;
 };
@@ -229,47 +276,32 @@ export type MilestoneDoc = BaseDoc & {
   status: Status;
 };
 
-export type ConstitutionDoc = BaseDoc & {
-  title: string;
-  body: string;
-  order: number;
-  status: Status;
-};
-
-export type PolicyDoc = BaseDoc & {
-  title: string;
-  description: string;
-  icon: string;
-  order: number;
-  status: Status;
-};
-
 export type DocFor<C extends CollectionName> = C extends "classes"
   ? ClassDoc
   : C extends "lessons"
     ? LessonDoc
     : C extends "questions"
       ? QuestionDoc
-      : C extends "mascots"
-        ? MascotDoc
-        : C extends "products"
-          ? ProductDoc
-          : C extends "settings"
-            ? SiteSettingsDoc
-            : C extends "teachers"
-              ? TeacherDoc
-              : C extends "posts"
-                ? PostDoc
-                : C extends "events"
-                  ? EventDoc
-                  : C extends "testimonials"
-                    ? TestimonialDoc
-                    : C extends "milestones"
-                      ? MilestoneDoc
-                      : C extends "constitution"
-                        ? ConstitutionDoc
-                        : C extends "policies"
-                          ? PolicyDoc
+      : C extends "units"
+        ? UnitDoc
+        : C extends "mascots"
+          ? MascotDoc
+          : C extends "products"
+            ? ProductDoc
+            : C extends "settings"
+              ? SiteSettingsDoc
+              : C extends "teachers"
+                ? TeacherDoc
+                : C extends "posts"
+                  ? PostDoc
+                  : C extends "events"
+                    ? EventDoc
+                    : C extends "gallery"
+                      ? GalleryDoc
+                      : C extends "faqs"
+                        ? FaqDoc
+                        : C extends "milestones"
+                          ? MilestoneDoc
                           : LeaderboardDoc;
 /** Content is live when published, or scheduled with a publish time in the past. */
 export function isLive(doc: { status?: Status; publishAt?: string }, now = Date.now()) {

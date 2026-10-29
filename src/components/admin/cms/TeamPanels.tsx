@@ -129,7 +129,7 @@ export function SubAdminsPanel({ notify }: { notify: (m: string, t?: "ok" | "err
               save({}, edit.isNew ? "Sub-admin added — send them the sign-up link" : "Sub-admin updated");
             }}
           >
-            <div className="font-[family-name:var(--font-heading)] text-xl">{edit.isNew ? "New sub-admin" : `Edit ${edit.name}`}</div>
+            <div className="font-display text-xl">{edit.isNew ? "New sub-admin" : `Edit ${edit.name}`}</div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block text-sm">
                 <span className="mb-1 block text-xs font-bold uppercase text-black/55">Full name *</span>
@@ -228,7 +228,7 @@ export function AccountPanel({ notify, name, email }: { notify: (m: string, t?: 
         notify("Password changed");
       }}
     >
-      <div className="font-[family-name:var(--font-heading)] text-xl">My account</div>
+      <div className="font-display text-xl">My account</div>
       <div className="text-sm text-black/60">
         {name} · {email}
       </div>
