@@ -110,6 +110,13 @@ export function FieldEditor({
   const help = field.help ? <span className="mt-1 block text-xs text-black/45">{field.help}</span> : null;
 
   switch (field.type) {
+    case "heading":
+      return (
+        <div id={`cmsh-${field.key}`} className="scroll-mt-24 border-t border-black/10 pt-5">
+          <h3 className="font-display text-xl font-extrabold text-ink">{field.label}</h3>
+          {field.help ? <p className="mt-0.5 text-sm text-black/50">{field.help}</p> : null}
+        </div>
+      );
     case "text":
     case "date":
       return (

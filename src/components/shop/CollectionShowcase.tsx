@@ -5,7 +5,10 @@ import gsap from "gsap";
 import type { ProductDoc } from "@/lib/cms/types";
 import { cn } from "@/lib/cn";
 import { Garment } from "./Garment";
-import { sizeName } from "./ShopGrid";
+import { photoFor, sizeName } from "./ShopGrid";
+import { motionLevel } from "@/components/motion/MotionDirector";
+import { useSettings } from "@/lib/site";
+import { sized } from "@/lib/img";
 
 function money(p: ProductDoc) {
   try {
@@ -13,6 +16,14 @@ function money(p: ProductDoc) {
   } catch {
     return `${p.currency} ${p.price}`;
   }
+}
+
+/** readable label colour (navy or white) for a coloured tag */
+function inkOn(hex: string) {
+  const h = (hex || "#000").replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map((x) => x + x).join("") : h.slice(0, 6), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? "#0B1530" : "#FFFFFF";
 }
 
 function availability(p: ProductDoc) {
@@ -53,6 +64,18 @@ export function CollectionShowcase({
 
   const product = products[index];
   const colorway = product?.colorways[colorIdx] ?? product?.colorways[0];
+  const photo = photoFor(colorway, side);
+  const photoMode = !!photoFor(colorway, "front");
+  const hasBack = !photoMode || photoFor(colorway, "back") !== photoFor(colorway, "front");
+  const s = useSettings();
+  const [hold, setHold] = useState(false);
+  const holdTimer = useRef<number | undefined>(undefined);
+  /** pause auto-rotation while someone is interacting, and for a few seconds after */
+  const pause = useCallback(() => {
+    setHold(true);
+    window.clearTimeout(holdTimer.current);
+    holdTimer.current = window.setTimeout(() => setHold(false), 8000);
+  }, []);
 
   // Set initial garment colour without animation
   useLayoutEffect(() => {
@@ -63,7 +86,7 @@ export function CollectionShowcase({
   // Idle sway + ticker
   useEffect(() => {
     const ctx = gsap.context(() => {
-      if (hangerRef.current) {
+      if (hangerRef.current && !photoMode) {
         gsap.to(hangerRef.current, { rotation: 1.6, duration: 2.6, yoyo: true, repeat: -1, ease: "sine.inOut", transformOrigin: "50% 0%" });
       }
       if (tickerRef.current) {
@@ -71,7 +94,7 @@ export function CollectionShowcase({
       }
     });
     return () => ctx.revert();
-  }, []);
+  }, [photoMode]);
 
   // Tags swing in when product changes
   useEffect(() => {
@@ -170,16 +193,25 @@ export function CollectionShowcase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request?.seq]);
 
+  // auto-rotate (Settings → Animations → "Clothing carousels — seconds per slide")
+  useEffect(() => {
+    if (hold || showAvail || products.length < 2 || motionLevel(s.animationLevel) === "off") return;
+    const t = window.setInterval(() => {
+      if (!document.hidden) go(1);
+    }, Math.max(3, Number(s.shopRotateSeconds) || 5) * 1000);
+    return () => window.clearInterval(t);
+  }, [hold, showAvail, products.length, s.animationLevel, s.shopRotateSeconds, go]);
+
   // keyboard support
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "ArrowRight") go(1);
-      if (e.key === "ArrowLeft") go(-1);
+      if (e.key === "ArrowRight") { pause(); go(1); }
+      if (e.key === "ArrowLeft") { pause(); go(-1); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go]);
+  }, [go, pause]);
 
   // swipe support
   const touchX = useRef<number | null>(null);
@@ -194,7 +226,10 @@ export function CollectionShowcase({
     <div className="relative overflow-hidden bg-[#EEEDE8]" ref={stageRef}>
       <div
         className="relative mx-auto grid max-w-6xl grid-rows-[1fr_auto] px-4 pb-16 pt-2 sm:min-h-[calc(100dvh-4rem)] sm:px-10 sm:pt-6"
-        onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
+        onPointerEnter={(e) => e.pointerType === "mouse" && setHold(true)}
+        onPointerLeave={(e) => e.pointerType === "mouse" && setHold(false)}
+        onFocus={pause}
+        onTouchStart={(e) => { pause(); touchX.current = e.touches[0].clientX; }}
         onTouchEnd={(e) => {
           if (touchX.current == null) return;
           const dx = e.changedTouches[0].clientX - touchX.current;
@@ -206,7 +241,7 @@ export function CollectionShowcase({
           <span>
             {String(index + 1).padStart(2, "0")} / {String(products.length).padStart(2, "0")}
           </span>
-          <button type="button" onClick={shuffle} className="rounded-full px-3 py-1 ring-1 ring-black/20 transition hover:bg-black hover:text-white">
+          <button type="button" onClick={() => { pause(); shuffle(); }} className="rounded-full px-3 py-1 ring-1 ring-black/20 transition hover:bg-black hover:text-white">
             Shuffle ⤮
           </button>
         </div>
@@ -215,7 +250,7 @@ export function CollectionShowcase({
         <div className="relative grid place-items-center">
           <button
             type="button"
-            onClick={() => go(-1)}
+            onClick={() => { pause(); go(-1); }}
             aria-label="Previous item"
             className="absolute left-0 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/60 text-lg ring-1 ring-black/20 backdrop-blur transition hover:bg-black hover:text-white sm:left-4"
           >
@@ -223,7 +258,7 @@ export function CollectionShowcase({
           </button>
           <button
             type="button"
-            onClick={() => go(1)}
+            onClick={() => { pause(); go(1); }}
             aria-label="Next item"
             className="absolute right-0 top-1/2 z-10 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/60 text-lg ring-1 ring-black/20 backdrop-blur transition hover:bg-black hover:text-white sm:right-4"
           >
@@ -233,13 +268,22 @@ export function CollectionShowcase({
           <div className="relative flex items-start gap-2 sm:gap-6">
             {/* hanger + garment */}
             <div ref={hangerRef} className="relative w-[min(56vw,380px)]" style={{ transformOrigin: "50% 0%" }}>
-              <svg viewBox="0 0 200 70" className="mx-auto -mb-3 w-[46%]" aria-hidden>
-                <path d="M100 6 a10 10 0 1 1 9 10 c-5 1 -9 4 -9 9 v6" fill="none" stroke="#3f3f46" strokeWidth="4" strokeLinecap="round" />
-                <path d="M100 31 L14 62 Q8 66 16 66 L184 66 Q192 66 186 62 Z" fill="none" stroke="#3f3f46" strokeWidth="4" strokeLinejoin="round" />
-              </svg>
-              <div ref={garmentRef} style={{ ["--garment" as string]: colorway?.hex }}>
-                <Garment product={product} side={side} colorway={colorway} printHex={colorway?.printHex ?? "#fff"} className="w-full drop-shadow-[0_24px_30px_rgba(0,0,0,0.18)]" />
-              </div>
+              {photoMode ? (
+                <div ref={garmentRef} className="relative aspect-[4/5] w-full overflow-hidden rounded-[1.6rem] bg-white shadow-[0_30px_60px_-25px_rgba(0,0,0,.4)] ring-1 ring-black/5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img key={photo} src={sized(photo, 800, 1000)} alt={`${product.name} — ${colorway?.name} ${side}`} className="absolute inset-0 h-full w-full animate-[fade-in_.45s_ease] object-cover" />
+                </div>
+              ) : (
+                <>
+                  <svg viewBox="0 0 200 70" className="mx-auto -mb-3 w-[46%]" aria-hidden>
+                    <path d="M100 6 a10 10 0 1 1 9 10 c-5 1 -9 4 -9 9 v6" fill="none" stroke="#3f3f46" strokeWidth="4" strokeLinecap="round" />
+                    <path d="M100 31 L14 62 Q8 66 16 66 L184 66 Q192 66 186 62 Z" fill="none" stroke="#3f3f46" strokeWidth="4" strokeLinejoin="round" />
+                  </svg>
+                  <div ref={garmentRef} style={{ ["--garment" as string]: colorway?.hex }}>
+                    <Garment product={product} side={side} colorway={colorway} printHex={colorway?.printHex ?? "#fff"} className="w-full drop-shadow-[0_24px_30px_rgba(0,0,0,0.18)]" />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* colour tags */}
@@ -263,7 +307,7 @@ export function CollectionShowcase({
                     <span className="absolute top-1.5 h-2 w-2 rounded-full bg-[#EEEDE8] ring-1 ring-black/20" />
                     <span
                       className="mt-3 text-[8px] font-black uppercase tracking-widest sm:text-[9px]"
-                      style={{ writingMode: "vertical-rl", color: c.printHex }}
+                      style={{ writingMode: "vertical-rl", color: inkOn(c.tagHex || c.hex) }}
                     >
                       {c.name}
                     </span>
@@ -276,11 +320,12 @@ export function CollectionShowcase({
 
         {/* info */}
         <div ref={titleRef} className="mt-4 flex flex-col items-center gap-3 text-center">
-          <h2 className="font-display text-lg font-extrabold uppercase tracking-wide sm:text-2xl">{product.name}</h2>
+          <h2 className="flex min-h-[2.6em] items-center font-display text-lg font-extrabold uppercase leading-tight tracking-wide sm:min-h-0 sm:text-2xl">{product.name}</h2>
           <div className="text-sm font-semibold text-black/70">
             {money(product)} · <span className={cn("rounded-full px-2 py-0.5 text-xs", avail.tone)}>{avail.label}</span>
           </div>
-          <div className="flex rounded-full bg-white p-1 text-[11px] font-black uppercase tracking-widest ring-1 ring-black/20">
+          {/* kept in the layout (just hidden) when there is no back photo, so rotating products never shifts the page */}
+          <div aria-hidden={!hasBack || undefined} className={cn("flex rounded-full bg-white p-1 text-[11px] font-black uppercase tracking-widest ring-1 ring-black/20", !hasBack && "invisible")}>
             {(["front", "back"] as const).map((s) => (
               <button
                 key={s}

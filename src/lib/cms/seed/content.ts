@@ -28,6 +28,21 @@ export const seedSettings: SiteSettingsDoc[] = [
     footerLinks: ["Classes|/classes/", "Events|/events/", "Gallery|/gallery/", "Bible Games|/games/", "Clothing|/collection/", "Contact|/contact/"],
     animationLevel: "full",
     galleryRotateSeconds: 4,
+    reduceMotionMode: "gentle",
+    fxCursor: "yes",
+    fxSpotlight: "yes",
+    fxScramble: "yes",
+    fxParallax: "yes",
+    fxMagnetic: "yes",
+    fxTilt: "yes",
+    fxHeroIntro: "yes",
+    fxProgress: "yes",
+    fxPageFade: "yes",
+    galleryStripSeconds: 60,
+    shopRotateSeconds: 5,
+    aboutSections: ["about-us|Vision & mission|yes", "team|Our team|yes", "history|History|yes", "achievements|Achievements|yes"],
+    visionTitle: "Our vision",
+    missionTitle: "Our mission",
     commentsOpen: "yes",
     commentsNote: "Comments are read by a ministry admin before they appear. Please don't share children's full names, schools or contact details.",
     historyIntro: "From twelve children in a borrowed vestry to nine classrooms of curious, joyful learners — here is how God has grown our children's ministry.",
@@ -308,10 +323,19 @@ export const seedPosts: PostDoc[] = [
   P("p6", "news", "kwame-mensah", "2026-09-14", "Seniors asked brilliant questions today about Daniel and standing firm when friends don't share your faith. Parents — ask them what they'd do in Daniel's shoes. You might be surprised 🦁", { reactions: { "❤️": 55, "👏": 28, "🙏": 12 } }),
 ];
 
+/** short descriptions of the starter photos, used as captions (and found by gallery search) */
+const CAPTION: Partial<Record<keyof typeof KIDS, string>> = {
+  groupClose: "friends together", boysBrown: "big smiles", window: "looking out", windowSill: "quiet moment", boyCrowd: "in the crowd",
+  fiveBoys: "five friends", boySmile: "happy face", girlCross: "praying", classroom: "in class", boysOutdoor: "outdoor games",
+  boysGreen: "outdoors", girlSmile: "smiles", group: "group photo", girlUniform: "ready to sing", twins: "twins",
+  kidsSmiling: "laughter", girlLaugh: "laughing", boysExcited: "excitement", boyGrin: "grinning", toddler: "little one",
+  boyOrange: "games time", girlYellow: "sunny day",
+};
+
 const G = (id: string, title: string, category: string, date: string, order: number, description: string, photos: Array<keyof typeof KIDS>): GalleryDoc => ({
   id, title, category, date, order, description,
   cover: kid(photos[0], 1200, 1500),
-  media: photos.map((p, i) => ({ type: "image" as const, url: kid(p, 1600), caption: i === 0 ? description : "" })),
+  media: photos.map((p, i) => ({ type: "image" as const, url: kid(p, 1600), caption: i === 0 ? description : `${title} — ${CAPTION[p] ?? "photo " + (i + 1)}` })),
   featured: order <= 4 ? "yes" : "no", status: "published",
 });
 
@@ -383,13 +407,11 @@ const H = (id: string, page: string, eyebrow: string, title: string, intro: stri
 
 /** One hero per page — edit the words, photos and buttons in the CMS under Website → Page heroes. */
 export const seedHeroes: HeroDoc[] = [
-  H("about", "About us", "About us", "Small hands, *big faith*.", "Helping children in Accra discover the Bible since 2006 — with trained teachers, joyful worship and a classroom for every age.", ["groupClose", "girlSmile", "boyGrin"], ["Meet the team", "/about/#team"], ["Our history", "/about/#history"]),
-  H("team", "Our team", "Our teachers", "Meet the team behind the *classes*.", "Every teacher is a church member, background-checked and safeguarding-trained — and they love your children.", ["classroom", "kidsSmiling"], ["Contact a teacher", "/contact/"], null, "photo"),
-  H("history", "History", "Since 2006", "Our *history* & achievements.", "From twelve children in a borrowed vestry to nine bright classrooms — the story of God's faithfulness to our children.", ["window", "boysBrown", "girlUniform"], ["Download our history", "#history-pdf"]),
-  H("classes", "Classes", "Classes", "A classroom for *every age*.", "Nine classes from age 3 to 13 — each with its own room, teachers and weekly Bible lesson.", ["classroom", "toddler", "boysGreen"], ["Find your child's class", "#beginners"]),
+  H("about", "About us", "About us", "Small hands, *big faith*.", "Helping children in Accra discover the Bible since 2006 — with trained teachers, joyful worship and a classroom for every age.", ["groupClose", "girlSmile", "boyGrin"], null, null),
+  H("classes", "Classes", "Classes", "A classroom for *every age*.", "Nine classes from age 3 to 13 — each with its own room, teachers and weekly Bible lesson.", ["classroom", "toddler", "boysGreen"], null),
   H("events", "Events", "Events", "What's on this *season*.", "Harvests, camps, nativity and family nights. Tap any event to add it to your calendar — or subscribe once and stay in sync.", ["boysExcited", "girlLaugh", "boysOutdoor"], ["See what's coming up", "#calendar"]),
   H("blog", "Blog", "From our classrooms", "Stories, verses & *news*.", "Weekly verses, photos from class and news for families — straight from our teachers.", ["kidsSmiling", "girlYellow", "boySmile"], ["Latest posts", "#feed"]),
-  H("gallery", "Gallery", "Gallery", "Moments of *joy*.", "Harvests, camps, graduations and everyday Sundays — captured with every parent's consent.", ["boyCrowd", "twins", "girlSmile"], ["Browse albums", "#albums"]),
+  H("gallery", "Gallery", "Gallery", "Moments of *joy*.", "Harvests, camps, graduations and everyday Sundays — captured with every parent's consent.", ["boyCrowd", "twins", "girlSmile"], ["Search the gallery", "#albums"]),
   H("contact", "Contact", "Get in touch", "We'd love to *hear from you*.", "Questions about your first Sunday, classes or safeguarding? Send a message or WhatsApp us — we reply within a day.", ["girlLaugh", "boyGrin"], ["Send a message", "#form-title"], ["WhatsApp us", "whatsapp"]),
   H("games", "Bible Games", "Kids Zone", "Play your way through the *Bible*.", "Short lessons, friendly mascots and badges to earn — learn the big stories one level at a time.", ["boysExcited", "girlYellow"], ["Start playing", "#play"], null, "photo"),
   H("collection", "Clothing", "Kids Zone · Clothing", "Wear your *faith*.", "Soft tees, hoodies and long sleeves with Bible-inspired prints — choose your colour and size, then request yours.", [], ["Shop the collection", "#shop"], null, "plain"),

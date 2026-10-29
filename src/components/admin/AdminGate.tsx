@@ -39,10 +39,14 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [recovery, setRecovery] = useState(false);
+  // accounts created with a temporary password must choose their own before using the CMS
+  const [mustChange, setMustChange] = useState(false);
 
   const check = useCallback(async () => {
     try {
       const w = await whoami();
+      const { data: u } = await supa().auth.getUser();
+      setMustChange(Boolean(u.user?.user_metadata?.must_change_password));
       setWho(w);
       setState(w ? "in" : "out");
     } catch (e) {
@@ -183,6 +187,36 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
           {mode !== "reset" ? <Link onClick={() => { setMode("reset"); setMsg(null); }}>Forgot password?</Link> : null}
         </div>
       </>,
+    );
+  }
+
+  // First sign-in with a temporary password: choose a new one before anything else
+  if (who && mustChange) {
+    return shell(
+      <form
+        className="grid gap-3"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (password.length < 10) return setMsg({ text: "Use at least 10 characters.", tone: "err" });
+          setBusy(true);
+          const { error } = await supa().auth.updateUser({ password, data: { must_change_password: false } });
+          setBusy(false);
+          if (error) return setMsg({ text: error.message, tone: "err" });
+          setPassword("");
+          setMustChange(false);
+          setMsg({ text: "Password updated — welcome!", tone: "ok" });
+          check();
+        }}
+      >
+        <div className="font-display text-2xl">Choose your own password</div>
+        <p className="text-sm text-black/70">
+          You signed in as <b>{who.email}</b> with a temporary password. Pick a new one (10+ characters) to continue.
+        </p>
+        <input className={input} type="password" minLength={10} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password" autoComplete="new-password" />
+        {msg ? <Msg {...msg} /> : null}
+        <Button type="submit" disabled={busy}>Save and continue</Button>
+        <button type="button" className="text-left text-sm underline" onClick={signOut}>Sign out</button>
+      </form>,
     );
   }
 

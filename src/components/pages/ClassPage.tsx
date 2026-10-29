@@ -39,22 +39,22 @@ export function ClassPage() {
         <div aria-hidden className="dot-grid absolute inset-0 [mask-image:linear-gradient(180deg,#000_30%,transparent)]" />
         <Container className="relative grid items-center gap-8 py-12 lg:grid-cols-[1.3fr_1fr]">
           <div>
-            <nav aria-label="Breadcrumb" className="text-sm font-bold text-ink/50">
+            <nav aria-label="Breadcrumb" data-ph style={{ "--i": 0 } as React.CSSProperties} className="text-sm font-bold text-ink/50">
               <Link href="/classes/" className="hover:text-ink">Classes</Link> <span aria-hidden>›</span> <Link href={`/classes/#${c.group}`} className="capitalize hover:text-ink">{c.group}</Link>
             </nav>
-            <div className="mt-4 flex items-center gap-4">
+            <div data-ph style={{ "--i": 1 } as React.CSSProperties} className="mt-4 flex items-center gap-4">
               <span className="grid h-16 w-16 place-items-center rounded-2xl font-display text-3xl font-extrabold text-white shadow-[0_4px_0_rgba(0,0,0,.15)]" style={{ background: c.color }}>{c.number}</span>
               <h1 className="font-display text-5xl font-extrabold sm:text-6xl">{c.name}</h1>
             </div>
-            <p className="mt-4 max-w-xl text-lg leading-8 text-ink/65">{c.description}</p>
-            <ul className="mt-5 flex flex-wrap gap-2 text-sm font-bold">
+            <p data-ph style={{ "--i": 2 } as React.CSSProperties} className="mt-4 max-w-xl text-lg leading-8 text-ink/65">{c.description}</p>
+            <ul data-ph style={{ "--i": 3 } as React.CSSProperties} className="mt-5 flex flex-wrap gap-2 text-sm font-bold">
               <li className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 shadow-soft"><User className="h-4 w-4 text-blueBrand-600" aria-hidden />{c.ageRange}</li>
               <li className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 shadow-soft"><DoorOpen className="h-4 w-4 text-blueBrand-600" aria-hidden />{c.room}</li>
               <li className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 shadow-soft"><CalendarClock className="h-4 w-4 text-blueBrand-600" aria-hidden />{c.schedule}</li>
             </ul>
           </div>
           {current ? (
-            <Link href={lessonHref(current.slug)} className="group relative overflow-hidden rounded-[2rem] bg-blueBrand-600 p-6 text-white shadow-[0_6px_0_#173EA8] transition hover:-translate-y-1 sm:p-7">
+            <Link href={lessonHref(current.slug)} data-cursor="Open" data-hero-img style={{ "--i": 1 } as React.CSSProperties} className="group relative overflow-hidden rounded-[2rem] bg-blueBrand-600 p-6 text-white shadow-[0_6px_0_#173EA8] transition hover:-translate-y-1 sm:p-7">
               <div className="text-xs font-extrabold uppercase tracking-wider text-white/70">Current lesson · {fmtDate(current.lessonDate, { day: "numeric", month: "short" })}</div>
               <div className="mt-2 font-display text-3xl font-extrabold">{current.title}</div>
               <div className="text-white/75">{current.bibleRef}</div>
@@ -122,7 +122,7 @@ export function ClassPage() {
               const d = new Date(l.lessonDate + "T12:00");
               return (
                 <li key={l.id}>
-                  <Link href={lessonHref(l.slug)} className="card flex items-center gap-4 p-4 transition hover:-translate-y-0.5">
+                  <Link href={lessonHref(l.slug)} data-cursor="Open" className="card flex items-center gap-4 p-4 transition hover:-translate-y-0.5">
                     <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-paper text-center leading-none">
                       <span><span className="block font-display text-xl font-extrabold">{d.getDate()}</span><span className="text-[10px] font-extrabold uppercase">{d.toLocaleDateString("en-GB", { month: "short" })}</span></span>
                     </span>

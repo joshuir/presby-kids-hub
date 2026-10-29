@@ -7,7 +7,8 @@ import { Check, Heart, Minus, Plus, Ruler, Shirt, ShoppingBag, Shuffle, Trash2, 
 import type { Colorway, ProductDoc } from "@/lib/cms/types";
 import { Garment } from "./Garment";
 import { submitForm } from "@/lib/cms/client";
-import { useMotionLevel } from "@/components/motion/MotionDirector";
+import { motionLevel, useMotionLevel } from "@/components/motion/MotionDirector";
+import { useSettings } from "@/lib/site";
 import { sized } from "@/lib/img";
 import { cn } from "@/lib/cn";
 
@@ -30,9 +31,48 @@ export function sizeName(z: string) {
 const totalStock = (p: ProductDoc) => p.sizes.reduce((s, z) => s + (p.stock?.[z] ?? 0), 0);
 
 /** Studio product shot: garment (or real photo) on a soft seamless backdrop with a floor shadow. */
-export function ProductShot({ product, colorway, side, className, zoom }: { product: ProductDoc; colorway?: Colorway; side: "front" | "back"; className?: string; zoom?: boolean }) {
+/** The real photo for a colour/side, if the CMS has one. */
+export const photoFor = (c: Colorway | undefined, side: "front" | "back") => (side === "front" ? c?.frontImage : c?.backImage || c?.frontImage) || "";
+/** A second, different photo to show on hover (back view, or the first lifestyle photo). */
+export const altPhoto = (p: ProductDoc, c: Colorway | undefined) => {
+  const front = photoFor(c, "front");
+  const back = photoFor(c, "back");
+  return back && back !== front ? back : p.photos?.[0] || "";
+};
+
+export function ProductShot({ product, colorway, side, className, zoom, src }: { product: ProductDoc; colorway?: Colorway; side: "front" | "back"; className?: string; zoom?: boolean; src?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [lens, setLens] = useState<{ x: number; y: number } | null>(null);
+  const photo = src || photoFor(colorway, side);
+  if (photo) {
+    // real product photography: full-bleed, with the same hover-to-zoom lens
+    return (
+      <div
+        ref={ref}
+        className={cn("relative overflow-hidden bg-[#EEEDE8]", zoom && "cursor-zoom-in", className)}
+        onPointerMove={(e) => {
+          if (!zoom || e.pointerType !== "mouse") return;
+          const r = ref.current!.getBoundingClientRect();
+          setLens({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
+        }}
+        onPointerLeave={() => setLens(null)}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={sized(photo, 900, 1125)}
+          alt={`${product.name} — ${colorway?.name ?? ""} ${side}`.trim()}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-200 ease-out"
+          style={{ transform: lens ? "scale(2.1)" : undefined, transformOrigin: lens ? `${lens.x}% ${lens.y}%` : undefined }}
+        />
+        {zoom && !lens ? (
+          <span className="pointer-events-none absolute bottom-3 right-3 hidden items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold text-ink/70 backdrop-blur sm:inline-flex">
+            <ZoomIn className="h-3.5 w-3.5" aria-hidden /> Hover to zoom
+          </span>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div
       ref={ref}
@@ -143,7 +183,20 @@ function ProductDetail({ product, initialColor = 0, onClose, onAdd }: { product:
   const [needSize, setNeedSize] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const cw = product.colorways[ci];
-  const views = ["front", "back", "detail", ...(product.photos ?? [])];
+  const hasPhotos = !!photoFor(cw, "front");
+  const backDiffers = hasPhotos && photoFor(cw, "back") !== photoFor(cw, "front");
+  const views = hasPhotos
+    ? ["front", ...(backDiffers ? ["back"] : []), ...(product.photos ?? [])]
+    : ["front", "back", "detail", ...(product.photos ?? [])];
+  // the gallery moves on by itself (Settings → Animations → clothing carousels), pausing while you look
+  const s = useSettings();
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (paused || views.length < 2 || motionLevel(s.animationLevel) === "off") return;
+    const t = window.setInterval(() => setView((v) => views[(views.indexOf(v) + 1) % views.length]), Math.max(3, Number(s.shopRotateSeconds) || 5) * 1000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paused, views.join("|"), s.animationLevel, s.shopRotateSeconds]);
   useEffect(() => {
     closeRef.current?.focus();
     const k = (e: KeyboardEvent) => e.key === "Escape" && !guide && onClose();
@@ -195,7 +248,7 @@ function ProductDetail({ product, initialColor = 0, onClose, onAdd }: { product:
           <X className="h-5 w-5" aria-hidden />
         </button>
         {/* gallery */}
-        <div className="bg-[#EEEDE8] p-3 sm:p-4">
+        <div className="bg-[#EEEDE8] p-3 sm:p-4" onPointerEnter={() => setPaused(true)} onPointerLeave={() => setPaused(false)} onTouchStart={() => setPaused(true)} onFocus={() => setPaused(true)}>
           <AnimatePresence mode="wait">
             <motion.div key={view + ci} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               {view === "front" || view === "back" ? (
@@ -215,7 +268,7 @@ function ProductDetail({ product, initialColor = 0, onClose, onAdd }: { product:
           </AnimatePresence>
           <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto">
             {views.map((v) => (
-              <button key={v} type="button" onClick={() => setView(v)} aria-pressed={view === v} aria-label={v.startsWith("http") ? "Product photo" : `${v} view`} className={cn("h-20 w-16 shrink-0 overflow-hidden rounded-xl ring-2 transition", view === v ? "ring-ink" : "ring-transparent opacity-70 hover:opacity-100")}>
+              <button key={v} type="button" onClick={() => { setView(v); setPaused(true); }} aria-pressed={view === v} aria-label={v.startsWith("http") ? "Product photo" : `${v} view`} className={cn("h-20 w-16 shrink-0 overflow-hidden rounded-xl ring-2 transition", view === v ? "ring-ink" : "ring-transparent opacity-70 hover:opacity-100")}>
                 {v === "front" || v === "back" ? (
                   <ProductShot product={product} colorway={cw} side={v} className="h-full w-full" />
                 ) : v === "detail" ? (
@@ -407,11 +460,11 @@ function ProductCard({ p, onOpen }: { p: ProductDoc; onOpen: (colour: number) =>
   const stock = totalStock(p);
   return (
     <article data-card className="group">
-      <button type="button" onClick={() => onOpen(ci)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} onFocus={() => setHover(true)} onBlur={() => setHover(false)} className="relative block w-full text-left" aria-label={`${p.name} — ${p.colorways[ci]?.name}. Open details`}>
+      <button type="button" data-cursor="View" onClick={() => onOpen(ci)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} onFocus={() => setHover(true)} onBlur={() => setHover(false)} className="relative block w-full text-left" aria-label={`${p.name} — ${p.colorways[ci]?.name}. Open details`}>
         <div className="relative">
           <ProductShot product={p} colorway={p.colorways[ci]} side="front" className={cn("aspect-[4/5] w-full transition-opacity duration-500", hover && "opacity-0")} />
           <div className={cn("absolute inset-0 transition-opacity duration-500", hover ? "opacity-100" : "opacity-0")} aria-hidden>
-            <ProductShot product={p} colorway={p.colorways[ci]} side="back" className="h-full w-full" />
+            <ProductShot product={p} colorway={p.colorways[ci]} side="back" src={altPhoto(p, p.colorways[ci]) || undefined} className="h-full w-full" />
           </div>
           {p.badge ? <span className="absolute left-2 top-2 bg-ink px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-white">{p.badge}</span> : null}
           {stock <= 0 ? <span className="absolute right-2 top-2 bg-white px-2 py-0.5 text-[11px] font-extrabold uppercase">Sold out</span> : stock < 10 ? <span className="absolute right-2 top-2 bg-[#FFE8E1] px-2 py-0.5 text-[11px] font-extrabold uppercase text-[#C2410C]">Low stock</span> : null}

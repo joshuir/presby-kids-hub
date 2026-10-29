@@ -14,24 +14,42 @@ if (process.env.NEXT_PUBLIC_MOTION_PROBE && typeof window !== "undefined") (wind
 
 export type MotionLevel = "full" | "reduced" | "off";
 
+/**
+ * What visitors whose device asks for reduced motion get (CMS: Settings → Animations):
+ *  "gentle" (default) – soft fades and short slides only; no parallax, tilt, scramble or scrubbing
+ *  "off"              – no animation at all
+ */
+let reduceMode: "gentle" | "off" = "gentle";
+export function setReduceMode(m?: string) {
+  reduceMode = m === "off" ? "off" : "gentle";
+}
+
 export function motionLevel(setting?: string): MotionLevel {
   if (typeof window === "undefined") return "full";
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return "off";
-  return setting === "off" ? "off" : setting === "reduced" ? "reduced" : "full";
+  const base: MotionLevel = setting === "off" ? "off" : setting === "reduced" ? "reduced" : "full";
+  if (base === "off") return "off";
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return reduceMode === "off" ? "off" : "reduced";
+  return base;
 }
+
+/** CMS on/off switches for individual effects (anything but "no" means on). */
+export type FxKey = "fxCursor" | "fxSpotlight" | "fxScramble" | "fxParallax" | "fxMagnetic" | "fxTilt" | "fxHeroIntro" | "fxProgress" | "fxPageFade";
+export const fxOn = (s: object, k: FxKey) => (s as Record<string, unknown>)[k] !== "no";
 
 /** Use inside components to respect the visitor's and the CMS's motion setting. */
 export function useMotionLevel(): MotionLevel {
   const s = useSettings();
   // start as "full" on both server and first client render (no hydration mismatch), then settle
   const [lvl, setLvl] = useState<MotionLevel>("full");
+  const rm = (s as unknown as { reduceMotionMode?: string }).reduceMotionMode;
   useEffect(() => {
+    setReduceMode(rm);
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setLvl(motionLevel(s.animationLevel));
     update();
     mq.addEventListener?.("change", update);
     return () => mq.removeEventListener?.("change", update);
-  }, [s.animationLevel]);
+  }, [s.animationLevel, rm]);
   return lvl;
 }
 
@@ -52,10 +70,35 @@ export function MotionDirector() {
   const pathname = usePathname();
   const s = useSettings();
   const barRef = useRef<HTMLDivElement>(null);
+  const rm = (s as unknown as { reduceMotionMode?: string }).reduceMotionMode;
+  setReduceMode(rm); // synchronous so every component's effects see the CMS choice
+  const fx = {
+    parallax: fxOn(s, "fxParallax"),
+    magnetic: fxOn(s, "fxMagnetic"),
+    tilt: fxOn(s, "fxTilt"),
+    progress: fxOn(s, "fxProgress"),
+    cursor: fxOn(s, "fxCursor"),
+    spotlight: fxOn(s, "fxSpotlight"),
+    scramble: fxOn(s, "fxScramble"),
+    hero: fxOn(s, "fxHeroIntro"),
+  };
+  const [level, setLevel] = useState<MotionLevel>("full");
 
   useEffect(() => {
-    const level = motionLevel(s.animationLevel);
-    document.documentElement.dataset.motion = level;
+    const el = document.documentElement;
+    const update = () => {
+      const l = motionLevel(s.animationLevel);
+      setLevel(l);
+      el.dataset.motion = l;
+      el.dataset.heroIntro = fx.hero ? "on" : "off";
+    };
+    update();
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, [s.animationLevel, rm, fx.hero]);
+
+  useEffect(() => {
     if (level === "off") return;
     const full = level === "full";
     const seen = new WeakSet<Element>();
@@ -194,11 +237,11 @@ export function MotionDirector() {
       each("[data-count]", count);
       each("[data-split]", split);
       if (full) {
-        each("[data-parallax]", parallax);
+        if (fx.parallax) each("[data-parallax]", parallax);
         each("[data-scrub-words]", scrubWords);
         if (fine()) {
-          each("[data-magnetic]", magnetic);
-          each("[data-tilt]", tilt);
+          if (fx.magnetic) each("[data-magnetic]", magnetic);
+          if (fx.tilt) each("[data-tilt]", tilt);
         }
       }
       return added;
@@ -230,7 +273,7 @@ export function MotionDirector() {
 
     // reading-progress bar
     const bar = barRef.current;
-    const prog = bar
+    const prog = bar && fx.progress
       ? ScrollTrigger.create({ start: 0, end: "max", onUpdate: (self) => gsap.set(bar, { scaleX: self.progress }) })
       : null;
 
@@ -244,55 +287,153 @@ export function MotionDirector() {
       document.querySelectorAll<HTMLElement>("[data-reveal],[data-reveal] [data-stagger],[data-split] [data-w]").forEach((el) => gsap.set(el, { clearProps: "all" }));
       document.querySelectorAll<HTMLElement>("[data-parallax],[data-tilt]").forEach((el) => gsap.set(el, { clearProps: "transform" }));
     };
-  }, [pathname, s.animationLevel]);
+  }, [pathname, level, fx.parallax, fx.magnetic, fx.tilt, fx.progress]);
 
   return (
     <>
       <div ref={barRef} aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-[3px] origin-left scale-x-0 bg-gradient-to-r from-blueBrand-500 via-sun to-coral" />
-      <CursorBuddy level={s.animationLevel} />
+      <Cursor on={level !== "off" && fx.cursor} />
+      <PointerFx spotlight={level !== "off" && fx.spotlight} scramble={level === "full" && fx.scramble} />
     </>
   );
 }
 
-/** A soft ring that follows the pointer and grows over anything clickable (mouse users only). */
-function CursorBuddy({ level }: { level?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
+/**
+ * The custom cursor from the original site: a small dot plus a trailing ring that
+ * tints over links and turns into a solid blue label ("Explore", "View"…) over anything
+ * with data-cursor="Label". Mouse only; the normal cursor stays visible.
+ */
+function Cursor({ on }: { on: boolean }) {
+  const dotRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    const el = ref.current;
-    if (!el || motionLevel(level) !== "full" || !fine()) return;
-    el.style.display = "block";
-    const xTo = gsap.quickTo(el, "x", { duration: 0.35, ease: "power3.out" });
-    const yTo = gsap.quickTo(el, "y", { duration: 0.35, ease: "power3.out" });
-    let over = false;
+    const dot = dotRef.current, ring = ringRef.current, label = labelRef.current;
+    if (!on || !dot || !ring || !label || !fine()) return;
+    const html = document.documentElement;
+    html.classList.add("has-cursor");
+    const rx = gsap.quickTo(ring, "x", { duration: 0.45, ease: "power3.out" });
+    const ry = gsap.quickTo(ring, "y", { duration: 0.45, ease: "power3.out" });
+    const dx = gsap.quickTo(dot, "x", { duration: 0.08, ease: "none" });
+    const dy = gsap.quickTo(dot, "y", { duration: 0.08, ease: "none" });
+    let mode = "";
+    let shown = false;
+    const setMode = (m: string, text = "") => {
+      if (m === mode && label.textContent === text) return;
+      mode = m;
+      ring.dataset.mode = m;
+      label.textContent = text;
+      gsap.to(ring, { scale: m === "label" ? 1 : m === "link" ? 0.62 : 0.42, duration: 0.35, ease: "power3.out" });
+      gsap.to(label, { opacity: m === "label" ? 1 : 0, duration: 0.2 });
+      gsap.to(dot, { scale: m === "label" ? 0 : 1, duration: 0.2 });
+    };
+    setMode("default");
     const move = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") return;
-      xTo(e.clientX);
-      yTo(e.clientY);
-      const t = e.target as Element | null;
-      const hit = !!t?.closest?.("a,button,[role=button],input,select,textarea,label,[data-tilt]");
-      if (hit !== over) {
-        over = hit;
-        gsap.to(el, { scale: hit ? 1.9 : 1, opacity: hit ? 0.35 : 0.55, duration: 0.25 });
+      dx(e.clientX); dy(e.clientY); rx(e.clientX); ry(e.clientY);
+      if (!shown) {
+        shown = true;
+        gsap.set([dot, ring], { x: e.clientX, y: e.clientY });
+        gsap.to([dot, ring], { opacity: 1, duration: 0.25 });
       }
+      const t = e.target as Element | null;
+      const lab = t?.closest?.("[data-cursor]") as HTMLElement | null;
+      if (lab) return setMode("label", lab.dataset.cursor || "View");
+      if (t?.closest?.("input,textarea,select,[contenteditable=true]")) return setMode("text");
+      setMode(t?.closest?.("a,button,[role=button],[role=tab],label,summary") ? "link" : "default");
     };
-    const leave = () => gsap.to(el, { opacity: 0, duration: 0.2 });
-    const enter = () => gsap.to(el, { opacity: 0.55, duration: 0.2 });
-    window.addEventListener("pointermove", move);
-    document.addEventListener("pointerleave", leave);
-    document.addEventListener("pointerenter", enter);
+    const hide = () => { shown = false; gsap.to([dot, ring], { opacity: 0, duration: 0.2 }); };
+    const down = () => gsap.to(ring, { scale: "-=0.08", duration: 0.12, yoyo: true, repeat: 1 });
+    window.addEventListener("pointermove", move, { passive: true });
+    window.addEventListener("pointerdown", down);
+    document.documentElement.addEventListener("pointerleave", hide);
+    window.addEventListener("blur", hide);
     return () => {
       window.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerleave", leave);
-      document.removeEventListener("pointerenter", enter);
-      el.style.display = "none";
+      window.removeEventListener("pointerdown", down);
+      document.documentElement.removeEventListener("pointerleave", hide);
+      window.removeEventListener("blur", hide);
+      html.classList.remove("has-cursor");
+      gsap.set([dot, ring], { opacity: 0 });
     };
-  }, [level]);
+  }, [on]);
   return (
-    <div
-      ref={ref}
-      aria-hidden
-      style={{ display: "none" }}
-      className="pointer-events-none fixed left-0 top-0 z-[80] -ml-4 -mt-4 h-8 w-8 rounded-full border-2 border-blueBrand-500 opacity-0 mix-blend-multiply"
-    />
+    <div aria-hidden className="cm-cursor">
+      <div ref={dotRef} className="cm-cursor-dot" />
+      <div ref={ringRef} className="cm-cursor-ring">
+        <span ref={labelRef} className="cm-cursor-label" />
+      </div>
+    </div>
   );
+}
+
+const SCRAMBLE = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+
+/**
+ * Pointer effects handled with one listener each (cheap, and they work for content that
+ * arrives later from the CMS):
+ *  – spotlight: a soft blue glow follows the mouse across any .card / [data-card]
+ *  – scramble: menu labels ([data-scramble]) shuffle their letters briefly on hover
+ */
+function PointerFx({ spotlight, scramble }: { spotlight: boolean; scramble: boolean }) {
+  useEffect(() => {
+    if (!spotlight || !fine()) return;
+    let lit: HTMLElement | null = null;
+    const move = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const c = (e.target as Element | null)?.closest?.(".card,[data-card]") as HTMLElement | null;
+      if (c !== lit) {
+        lit?.classList.remove("is-lit");
+        lit = c;
+        c?.classList.add("is-lit");
+      }
+      if (c) {
+        const b = c.getBoundingClientRect();
+        c.style.setProperty("--mx", `${e.clientX - b.left}px`);
+        c.style.setProperty("--my", `${e.clientY - b.top}px`);
+      }
+    };
+    const out = () => { lit?.classList.remove("is-lit"); lit = null; };
+    document.addEventListener("pointermove", move, { passive: true });
+    document.documentElement.addEventListener("pointerleave", out);
+    return () => {
+      document.removeEventListener("pointermove", move);
+      document.documentElement.removeEventListener("pointerleave", out);
+      out();
+    };
+  }, [spotlight]);
+
+  useEffect(() => {
+    if (!scramble || !fine()) return;
+    const running = new WeakMap<Element, number>();
+    const done = new WeakMap<Element, number>();
+    const over = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const host = (e.target as Element | null)?.closest?.("[data-scramble]");
+      // only when the pointer enters the link from outside — moving between its icon and
+      // label (or the letters changing width) must not restart it
+      if (!host || host.contains(e.relatedTarget as Node | null)) return;
+      const el = host.querySelector<HTMLElement>("[data-scramble-text]");
+      if (!el || running.has(el) || performance.now() - (done.get(el) ?? -1e9) < 600) return;
+      const final = el.dataset.text ?? el.textContent ?? "";
+      el.dataset.text = final;
+      el.style.minWidth = `${el.offsetWidth}px`;
+      const start = performance.now();
+      const step = (now: number) => {
+        const p = Math.min(1, (now - start) / 380);
+        const keep = Math.floor(final.length * p);
+        el.textContent = final
+          .split("")
+          .map((ch, i) => (i < keep || ch === " " ? ch : SCRAMBLE[(Math.random() * SCRAMBLE.length) | 0]))
+          .join("");
+        if (p < 1) running.set(el, requestAnimationFrame(step));
+        else { el.textContent = final; el.style.minWidth = ""; running.delete(el); done.set(el, performance.now()); }
+      };
+      running.set(el, requestAnimationFrame(step));
+    };
+    document.addEventListener("pointerover", over, { passive: true });
+    return () => document.removeEventListener("pointerover", over);
+  }, [scramble]);
+
+  return null;
 }

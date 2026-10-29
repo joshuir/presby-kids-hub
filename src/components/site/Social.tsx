@@ -44,15 +44,51 @@ export function socialIcon(network: string): [IconCmp, string, string] {
   return [Icon, hex === "#000000" ? "#111111" : hex, BRAND_BG[key] ?? hex];
 }
 
-/** Round brand badge (white glyph on the brand colour). */
+/**
+ * Logos that are already a full mark (a circle or square with the symbol cut out) are drawn in
+ * their real colour over a backing that shows through the cut-out — exactly how the brands
+ * present them (Facebook's blue circle with a white "f", YouTube's red play button…).
+ */
+const FULL_MARK: Record<string, { fill: string; under: string; scale: number }> = {
+  facebook: { fill: "#0866FF", under: "#FFFFFF", scale: 1 },
+  telegram: { fill: "#26A5E4", under: "#FFFFFF", scale: 1 },
+  spotify: { fill: "#1ED760", under: "#000000", scale: 1 },
+  youtube: { fill: "#FF0000", under: "#FFFFFF", scale: 0.66 },
+  linkedin: { fill: "#0A66C2", under: "#FFFFFF", scale: 0.6 },
+};
+
+/** Official-looking brand badge for a social network (falls back to a link icon). */
 export function SocialBadge({ network, size = 40, className }: { network: string; size?: number; className?: string }) {
   const key = brandKey(network);
+  const b = BRAND[key];
+  const full = FULL_MARK[key];
+  const base = "relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full " + (className ?? "");
+  if (b && full) {
+    const ringed = full.scale < 1; // square marks sit on a white disc with a hairline ring
+    return (
+      <span className={base + (ringed ? " ring-1 ring-black/10" : "")} style={{ width: size, height: size, background: full.scale < 1 ? "#FFFFFF" : "transparent" }}>
+        <svg viewBox="0 0 24 24" aria-hidden style={{ width: `${full.scale * 100}%`, height: `${full.scale * 100}%` }}>
+          {full.scale === 1 ? <circle cx="12" cy="12" r="11.4" fill={full.under} /> : null}
+          <path d={b.path} fill={full.fill} />
+        </svg>
+      </span>
+    );
+  }
+  if (b && key === "tiktok") {
+    // TikTok's note with its cyan / red offset glow
+    return (
+      <span className={base} style={{ width: size, height: size, background: "#000" }}>
+        <svg viewBox="-3 -3 30 30" aria-hidden className="h-[62%] w-[62%]">
+          <path d={b.path} fill="#25F4EE" transform="translate(-0.9 -0.9)" />
+          <path d={b.path} fill="#FE2C55" transform="translate(0.9 0.9)" />
+          <path d={b.path} fill="#FFFFFF" />
+        </svg>
+      </span>
+    );
+  }
   return (
-    <span
-      className={"inline-grid shrink-0 place-items-center rounded-full text-white " + (className ?? "")}
-      style={{ width: size, height: size, background: BRAND_BG[key] ?? "#2563EB" }}
-    >
-      <BrandGlyph name={key} className="h-[48%] w-[48%]" />
+    <span className={base + " text-white"} style={{ width: size, height: size, background: BRAND_BG[key] ?? "#2563EB" }}>
+      <BrandGlyph name={key} className="h-[50%] w-[50%]" />
     </span>
   );
 }

@@ -10,16 +10,24 @@ import { AppPromo } from "@/components/blocks/AppPromo";
 import { HistorySection } from "@/components/history/HistoryPage";
 import { parts, useSettings } from "@/lib/site";
 
-const SECTIONS = [
-  ["about-us", "Vision & mission"],
-  ["team", "Our team"],
-  ["history", "History"],
-  ["achievements", "Achievements"],
-] as const;
+type SectionId = "about-us" | "team" | "history" | "achievements";
+const IDS: SectionId[] = ["about-us", "team", "history", "achievements"];
+const DEFAULT_LABEL: Record<SectionId, string> = { "about-us": "Vision & mission", team: "Our team", history: "History", achievements: "Achievements" };
 
-/** Sticky jump-links for the merged About page; highlights the section in view. */
-function SectionNav() {
-  const [active, setActive] = useState<string>(SECTIONS[0][0]);
+/** Sections in CMS order (Settings → About page → Sections); unknown ids are ignored, missing ones added at the end. */
+function useSections(lines?: string[]) {
+  const listed = (lines ?? [])
+    .map((l) => l.split("|").map((x) => x.trim()))
+    .filter(([id]) => IDS.includes(id as SectionId))
+    .map(([id, label, show]) => ({ id: id as SectionId, label: label || DEFAULT_LABEL[id as SectionId], show: (show || "yes").toLowerCase() !== "no" }));
+  IDS.forEach((id) => { if (!listed.some((x) => x.id === id)) listed.push({ id, label: DEFAULT_LABEL[id], show: true }); });
+  return listed.filter((x) => x.show);
+}
+
+/** Sticky jump-links for the About page; highlights the section in view. */
+function SectionNav({ sections }: { sections: { id: string; label: string }[] }) {
+  const SECTIONS = sections.map((x) => [x.id, x.label] as const);
+  const [active, setActive] = useState<string>(SECTIONS[0]?.[0] ?? "");
   const bar = useRef<HTMLUListElement>(null);
   useEffect(() => {
     const ul = bar.current;
@@ -37,7 +45,8 @@ function SectionNav() {
     );
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [SECTIONS.map((x) => x[0]).join()]);
   return (
     <nav aria-label="On this page" className="print-skip sticky top-[84px] z-30 mt-8 flex justify-center px-4">
       <ul ref={bar} className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-full border border-ink/10 bg-white/85 p-1.5 shadow-[0_8px_30px_-12px_rgba(15,23,42,.25)] backdrop-blur">
@@ -59,6 +68,7 @@ function SectionNav() {
 
 export function AboutPage() {
   const s = useSettings();
+  const sections = useSections(s.aboutSections);
   return (
     <div>
       <div className="print-skip"><PageHero page="about" eyebrow="About us" title={s.aboutTitle} intro={s.aboutSubtitle}>
@@ -79,18 +89,38 @@ export function AboutPage() {
         </ul>
       </PageHero></div>
 
-      <SectionNav />
+      {sections.length > 1 ? <SectionNav sections={sections} /> : null}
 
+      {sections.map(({ id }) =>
+        id === "about-us" ? <VisionMission key={id} /> :
+        id === "team" ? (
+          <section key={id} id="team" className="print-skip scroll-mt-28">
+            <Container className="mt-28">
+              <TeamRoster />
+            </Container>
+          </section>
+        ) :
+        <HistorySection key={id} part={id} />,
+      )}
+
+      <div className="print-skip"><AppPromo /></div>
+    </div>
+  );
+}
+
+function VisionMission() {
+  const s = useSettings();
+  return (
       <section id="about-us" className="print-skip scroll-mt-28">
       <Container className="mt-10">
         <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
           <Reveal className="relative overflow-hidden rounded-[2rem] bg-ink p-7 text-white sm:p-10" >
             <Eye className="h-10 w-10 text-sun" aria-hidden />
-            <h2 className="mt-4 font-display text-3xl font-extrabold">Our vision</h2>
+            <h2 className="mt-4 font-display text-3xl font-extrabold">{s.visionTitle || "Our vision"}</h2>
             <p className="mt-3 text-xl leading-8 text-white/80">{s.vision}</p>
           </Reveal>
           <div className="card p-7 sm:p-10">
-            <h2 className="font-display text-3xl font-extrabold">Our mission</h2>
+            <h2 className="font-display text-3xl font-extrabold">{s.missionTitle || "Our mission"}</h2>
             <p className="mt-2 text-ink/60">{s.missionIntro}</p>
             <Reveal as="ol" className="mt-6 grid gap-4 sm:grid-cols-2">
               {s.missionItems.map(parts).map(([t, d], i) => (
@@ -107,16 +137,5 @@ export function AboutPage() {
         </div>
       </Container>
       </section>
-
-      <section id="team" className="print-skip scroll-mt-28">
-        <Container className="mt-28">
-          <TeamRoster />
-        </Container>
-      </section>
-
-      <HistorySection />
-
-      <div className="print-skip"><AppPromo /></div>
-    </div>
   );
 }

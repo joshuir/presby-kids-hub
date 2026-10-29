@@ -209,7 +209,7 @@ export function PostCard({ post, author, event, compact, index = 0 }: { post: Po
 
   if (compact) {
     return (
-      <Link href={`/blog/#${post.id}`} data-tilt="4" className="card block h-full p-5">
+      <Link href={`/blog/#${post.id}`} data-cursor="Read" data-tilt="4" className="card block h-full p-5">
         {body}
         <div className="mt-4 flex items-center gap-3 text-sm text-ink/55">
           <span><span aria-hidden>{top.join("")}</span> {total}</span>

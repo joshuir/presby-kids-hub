@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Pause, Play, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Images, Play, Search, X } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
 import { Loading } from "@/components/site/LoadState";
@@ -87,8 +87,8 @@ function Lightbox({ album, start, onClose }: { album: GalleryDoc; start: number;
 }
 
 /** Album page: an auto-rotating mosaic on top, then every photo in a grid. */
-function AlbumView({ album, all }: { album: GalleryDoc; all: GalleryDoc[] }) {
-  const [open, setOpen] = useState<number | null>(null);
+function AlbumView({ album, all, photo }: { album: GalleryDoc; all: GalleryDoc[]; photo?: number }) {
+  const [open, setOpen] = useState<number | null>(photo ?? null);
   const [paused, setPaused] = useState(false);
   const photos = albumPhotos(album);
   const slot = (k: number) => {
@@ -112,15 +112,12 @@ function AlbumView({ album, all }: { album: GalleryDoc; all: GalleryDoc[] }) {
             <h1 className="mt-3 font-display text-5xl font-extrabold leading-[0.95] sm:text-7xl"><SplitWords hero text={album.title} /></h1>
             {album.description ? <p className="mt-4 text-lg leading-8 text-ink/65">{album.description}</p> : null}
           </div>
-          <button type="button" onClick={() => setPaused((p) => !p)} aria-pressed={paused} className="btn btn-ghost !py-2.5 text-sm">
-            {paused ? <Play className="h-4 w-4" aria-hidden /> : <Pause className="h-4 w-4" aria-hidden />} {paused ? "Play slideshow" : "Pause slideshow"}
-          </button>
         </div>
       </Container>
 
       {/* auto-rotating mosaic */}
       <Container className="mt-8">
-        <div data-reveal="clip" className="grid h-[520px] grid-cols-2 grid-rows-3 gap-2 sm:h-[620px] sm:grid-cols-4 sm:grid-rows-2 sm:gap-3">
+        <div data-reveal="clip" onPointerEnter={() => setPaused(true)} onPointerLeave={() => setPaused(false)} className="grid h-[520px] grid-cols-2 grid-rows-3 gap-2 sm:h-[620px] sm:grid-cols-4 sm:grid-rows-2 sm:gap-3">
           <RotatingImage images={slot(0)} alt={album.title} offset={0} paused={paused} width={1200} height={1000} className="col-span-2 row-span-2 rounded-[1.6rem]" />
           <RotatingImage images={slot(1)} offset={1} paused={paused} width={600} height={600} className="rounded-[1.4rem]" />
           <RotatingImage images={slot(2)} offset={2} paused={paused} width={600} height={600} className="rounded-[1.4rem]" />
@@ -172,17 +169,39 @@ function AlbumView({ album, all }: { album: GalleryDoc; all: GalleryDoc[] }) {
   );
 }
 
+type Hit = { album: GalleryDoc; index: number; media: MediaItem };
+
+/** Lower-case text of everything that describes an album (for search). */
+const albumText = (a: GalleryDoc, eventTitle = "") =>
+  `${a.title} ${a.category} ${a.description} ${eventTitle} ${fmtDate(a.date, { month: "long", year: "numeric" })}`.toLowerCase();
+
 function GalleryInner() {
   const albums = useContent("gallery");
+  const events = useContent("events") ?? [];
   const sp = useSearchParams();
   const router = useRouter();
   const albumId = sp.get("album");
-  const [cat, setCat] = useState(() => sp.get("cat") ?? "All");
-  const [q, setQ] = useState("");
+  const photo = sp.get("photo");
+  const [cat, setCat] = useState(() => sp.get("cat") ?? "");
+  const [draft, setDraft] = useState(() => sp.get("q") ?? "");
+  const [q, setQ] = useState(() => sp.get("q") ?? "");
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const sorted = useMemo(() => [...(albums ?? [])].sort((a, b) => a.order - b.order || b.date.localeCompare(a.date)), [albums]);
-  const cats = useMemo(() => ["All", ...Array.from(new Set(sorted.map((a) => a.category).filter(Boolean)))], [sorted]);
-  const shown = sorted.filter((a) => (cat === "All" || a.category === cat) && (!q || `${a.title} ${a.category} ${a.description}`.toLowerCase().includes(q.toLowerCase())));
+  const cats = useMemo(() => Array.from(new Set(sorted.map((a) => a.category).filter(Boolean))).sort(), [sorted]);
+  const eventTitle = (a: GalleryDoc) => events.find((e) => e.id === a.eventId)?.title ?? "";
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = (text: string) => words.every((w) => text.includes(w));
+  const inCat = (a: GalleryDoc) => !cat || a.category === cat;
+  const shown = sorted.filter((a) => inCat(a) && (!words.length || matches(albumText(a, eventTitle(a)))));
+  // individual photos whose caption matches (from albums that didn't already match as a whole)
+  const photoHits: Hit[] = words.length
+    ? sorted.filter(inCat).flatMap((a) =>
+        (a.media ?? []).map((m, index) => ({ album: a, index, media: m })).filter((h) => h.media.type === "image" && h.media.caption && matches(`${h.media.caption} ${a.title}`.toLowerCase())),
+      ).slice(0, 24)
+    : [];
+  // events matching the search (or the chosen category) — with their photo album when one is linked
+  const eventHits = words.length ? events.filter((e) => matches(`${e.title} ${e.category} ${e.description} ${e.location}`.toLowerCase())).slice(0, 6) : [];
   const album = albumId ? sorted.find((a) => a.id === albumId) : undefined;
 
   useEffect(() => {
@@ -192,48 +211,137 @@ function GalleryInner() {
     window.scrollTo({ top: 0 });
   }, [albumId]);
 
+  const runSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setQ(draft.trim());
+    const p = new URLSearchParams();
+    if (cat) p.set("cat", cat);
+    if (draft.trim()) p.set("q", draft.trim());
+    window.history.replaceState(null, "", `/gallery/${p.toString() ? `?${p}` : ""}#albums`);
+    requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+  const clear = () => { setDraft(""); setQ(""); setCat(""); window.history.replaceState(null, "", "/gallery/#albums"); };
+
   if (!albums) return <Loading label="Loading albums…" />;
-  if (album) return <AlbumView album={album} all={sorted} />;
+  if (album) return <AlbumView key={album.id} album={album} all={sorted} photo={photo != null && !isNaN(Number(photo)) ? Number(photo) : undefined} />;
 
   return (
     <div>
       <PageHero page="gallery" eyebrow="Gallery" title="Moments of *joy*" intro="Group photos only — always shared with parental consent." />
 
       <div className="mt-6">
-        <GalleryRail
-          albums={sorted}
-          title="Gallery"
-          links={cats.slice(1, 3).map((c) => ({ href: `/gallery/?cat=${encodeURIComponent(c)}#albums`, label: c }))}
-        />
+        <GalleryRail albums={sorted} title="" />
       </div>
 
-      <Container className="mt-20" >
-        <div id="albums" className="scroll-mt-28 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-4xl font-extrabold sm:text-5xl"><SplitWords text="Every *album*" /></h2>
-            <p className="mt-2 text-ink/60">Each collage changes by itself — open one to see every photo.</p>
-          </div>
-          <label className="relative w-full sm:w-72">
-            <span className="sr-only">Search albums</span>
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search albums" className="h-12 w-full rounded-full bg-white pl-11 pr-4 outline-none ring-1 ring-ink/10 focus:ring-2 focus:ring-blueBrand-500" />
-          </label>
-        </div>
-        <div className="no-scrollbar mt-6 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Album categories">
-          {cats.map((c) => (
-            <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={cn("shrink-0 rounded-full px-4 py-2.5 text-sm font-bold transition", cat === c ? "bg-ink text-white" : "bg-white ring-1 ring-ink/10 hover:bg-paper")}>
-              {c} <span className="opacity-50">{c === "All" ? sorted.length : sorted.filter((a) => a.category === c).length}</span>
+      <Container className="mt-20">
+        <div id="albums" ref={resultsRef} className="scroll-mt-28">
+          <h2 className="font-display text-4xl font-extrabold sm:text-5xl"><SplitWords text="Find a *moment*" /></h2>
+          <p className="mt-2 text-ink/60">Pick an event category, or search for an event, album or photo.</p>
+
+          <form role="search" onSubmit={runSearch} className="mt-6 grid gap-3 rounded-[1.8rem] bg-white p-3 shadow-soft ring-1 ring-ink/5 sm:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto] sm:items-center">
+            <label className="relative block">
+              <span className="sr-only">Event category</span>
+              <Images className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blueBrand-600" aria-hidden />
+              <select
+                value={cat}
+                onChange={(e) => setCat(e.target.value)}
+                className="h-12 w-full cursor-pointer appearance-none rounded-full bg-paper pl-11 pr-10 text-[15px] font-bold outline-none ring-1 ring-ink/10 focus:ring-2 focus:ring-blueBrand-500"
+              >
+                <option value="">All events ({sorted.length})</option>
+                {cats.map((c) => (
+                  <option key={c} value={c}>{c} ({sorted.filter((a) => a.category === c).length})</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/50" aria-hidden />
+            </label>
+            <label className="relative block">
+              <span className="sr-only">Search events, albums and photos</span>
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden />
+              <input
+                type="search"
+                value={draft}
+                onChange={(e) => { setDraft(e.target.value); if (!e.target.value) setQ(""); }}
+                placeholder="Search events, albums or photos — e.g. harvest, camp, 2026"
+                className="h-12 w-full rounded-full bg-paper pl-11 pr-4 outline-none ring-1 ring-ink/10 focus:ring-2 focus:ring-blueBrand-500"
+              />
+            </label>
+            <button type="submit" className="btn btn-primary h-12 !py-0">
+              <Search className="h-4 w-4" aria-hidden /> Search
             </button>
-          ))}
+          </form>
+
+          <p className="mt-4 text-sm font-bold text-ink/55" aria-live="polite">
+            {q || cat ? (
+              <>
+                {shown.length} album{shown.length === 1 ? "" : "s"}
+                {words.length ? <>, {photoHits.length} photo{photoHits.length === 1 ? "" : "s"} and {eventHits.length} event{eventHits.length === 1 ? "" : "s"}</> : null}
+                {q ? <> for “{q}”</> : null}
+                {cat ? <> in {cat}</> : null}
+                {" · "}<button type="button" onClick={clear} className="underline underline-offset-4 hover:text-blueBrand-600">Clear</button>
+              </>
+            ) : (
+              <>{sorted.length} albums — each collage changes by itself; open one to see every photo.</>
+            )}
+          </p>
         </div>
-        <ul data-reveal className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-3" key={cat + q}>
-          {shown.map((a, i) => (
-            <li key={a.id} data-stagger>
-              <CollageCard a={a} i={i} />
-            </li>
-          ))}
-        </ul>
-        {!shown.length ? <p className="card mt-6 p-8 text-center text-ink/55">No albums match — try another category.</p> : null}
+
+        {eventHits.length ? (
+          <section className="mt-6" aria-label="Matching events">
+            <h3 className="text-xs font-extrabold uppercase tracking-[0.16em] text-ink/45">Events</h3>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {eventHits.map((e) => {
+                const linked = sorted.find((a) => a.eventId === e.id);
+                return (
+                  <li key={e.id}>
+                    <Link href={linked ? `/gallery/?album=${linked.id}` : `/events/#${e.id}`} data-cursor={linked ? "Photos" : "Event"} className="card flex items-center gap-3 p-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {e.image ? <img src={sized(e.image, 160, 160)} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover" /> : <span className="h-14 w-14 shrink-0 rounded-full" style={{ background: e.color || "#2563EB" }} />}
+                      <span className="min-w-0">
+                        <span className="block truncate font-display text-lg font-bold">{e.title}</span>
+                        <span className="block text-sm text-ink/55">{fmtDate(e.date)} · {linked ? "see the photos" : "event details"}</span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+
+        {shown.length ? (
+          <section className="mt-6" aria-label="Albums">
+            {words.length ? <h3 className="text-xs font-extrabold uppercase tracking-[0.16em] text-ink/45">Albums</h3> : null}
+            <ul data-reveal className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-3" key={cat + q}>
+              {shown.map((a, i) => (
+                <li key={a.id} data-stagger>
+                  <CollageCard a={a} i={i} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {photoHits.length ? (
+          <section className="mt-10" aria-label="Matching photos">
+            <h3 className="text-xs font-extrabold uppercase tracking-[0.16em] text-ink/45">Photos</h3>
+            <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              {photoHits.map((h) => (
+                <li key={h.album.id + h.index}>
+                  <Link href={`/gallery/?album=${h.album.id}&photo=${h.index}`} data-cursor="Open" className="group zoom-img block overflow-hidden rounded-[1rem]" title={h.media.caption}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={sized(h.media.url, 300, 300)} alt={h.media.caption || h.album.title} loading="lazy" className="aspect-square w-full object-cover" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {!shown.length && !photoHits.length && !eventHits.length ? (
+          <p className="card mt-6 p-8 text-center text-ink/55">
+            Nothing matches yet — try another word or category. <button type="button" onClick={clear} className="font-bold text-blueBrand-700 underline underline-offset-4">Show everything</button>
+          </p>
+        ) : null}
       </Container>
     </div>
   );

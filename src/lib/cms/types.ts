@@ -183,6 +183,26 @@ export type SiteSettingsDoc = BaseDoc & {
   animationLevel: string;
   /** seconds per gallery rotation step */
   galleryRotateSeconds: number;
+  /** what reduce-motion devices get: "gentle" (fades only) | "off" */
+  reduceMotionMode?: string;
+  /** effect switches: "yes" | "no" */
+  fxCursor?: string;
+  fxSpotlight?: string;
+  fxScramble?: string;
+  fxParallax?: string;
+  fxMagnetic?: string;
+  fxTilt?: string;
+  fxHeroIntro?: string;
+  fxProgress?: string;
+  fxPageFade?: string;
+  /** seconds for one full loop of the moving gallery strips */
+  galleryStripSeconds?: number;
+  /** seconds between slides in the clothing carousels */
+  shopRotateSeconds?: number;
+  /** About page sections, one per line: id|Jump-bar label|yes/no (order = page order) */
+  aboutSections?: string[];
+  visionTitle?: string;
+  missionTitle?: string;
   /** "yes" | "no" */
   commentsOpen: string;
   commentsNote: string;
@@ -294,6 +314,8 @@ export type GalleryDoc = BaseDoc & {
   media: MediaItem[];
   description: string;
   featured: string; // "yes" | "no"
+  /** optional: the event these photos are from (lets gallery search find albums by event) */
+  eventId?: string;
   order: number;
   status: Status;
 };

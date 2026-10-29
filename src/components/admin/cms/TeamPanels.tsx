@@ -24,6 +24,7 @@ const SECTIONS: { key: string; label: string }[] = [
   { key: "blog", label: "Blog" },
   { key: "events", label: "Events" },
   { key: "teachers", label: "Teachers" },
+  { key: "gallery", label: "Gallery" },
   { key: "parents", label: "Parents & children (personal data)" },
   { key: "analytics", label: "Analytics" },
   { key: "media", label: "Media library (delete files)" },
@@ -150,6 +151,14 @@ export function SubAdminsPanel({ notify }: { notify: (m: string, t?: "ok" | "err
 
             <fieldset>
               <legend className="mb-2 text-xs font-bold uppercase text-black/55">Sections they can edit</legend>
+              <label className="mb-2 flex items-center gap-2 rounded-xl bg-blueBrand-50 p-2.5 text-sm font-bold text-blueBrand-800 ring-1 ring-blueBrand-200">
+                <input
+                  type="checkbox"
+                  checked={SECTIONS.every((x) => edit.permissions?.includes(x.key))}
+                  onChange={(e) => setEdit({ ...edit, permissions: e.target.checked ? SECTIONS.map((x) => x.key) : [] })}
+                />
+                Full access — every section of the CMS
+              </label>
               <div className="grid gap-2 sm:grid-cols-2">
                 {SECTIONS.map((s) => (
                   <label key={s.key} className="flex items-center gap-2 rounded-xl p-2 text-sm ring-1 ring-black/10">

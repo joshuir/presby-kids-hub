@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight, ChevronRight, Home } from "lucide-react";
 import { Container } from "./Container";
 import { Eyebrow } from "@/components/ui/Reveal";
 import { SplitWords } from "@/components/motion/SplitWords";
-import { motionLevel } from "@/components/motion/MotionDirector";
+import { fxOn, motionLevel } from "@/components/motion/MotionDirector";
 import { useContent } from "@/lib/useContent";
 import { seedHeroes } from "@/lib/cms/seed/content";
 import { useSettings, waLink } from "@/lib/site";
@@ -134,8 +135,23 @@ export function PageHero({
       el.addEventListener("pointermove", move);
       off = () => el.removeEventListener("pointermove", move);
     }
-    return () => off();
-  }, [t, style, s.animationLevel]);
+    // scrolling away: the collage drifts up slower than the page (starts at 0, so nothing jumps on load)
+    let st: ScrollTrigger | undefined;
+    const drift = art;
+    if (drift && level === "full" && fxOn(s, "fxParallax")) {
+      const tw = gsap.fromTo(drift, { yPercent: 0 }, {
+        yPercent: 14, ease: "none",
+        scrollTrigger: { trigger: el, start: "top top", end: "bottom top", scrub: 0.5 },
+      });
+      st = tw.scrollTrigger;
+    }
+    return () => {
+      off();
+      st?.kill();
+      if (drift) gsap.set(drift, { clearProps: "transform" });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t, style, s.animationLevel, (s as unknown as Record<string, string>).fxParallax]);
 
   const Title = (
     <h1 className={cn("font-display font-extrabold leading-[0.98] tracking-tight", style === "photo" ? "text-white" : "text-ink", "text-[2.7rem] sm:text-6xl lg:text-[5.2rem]")}>

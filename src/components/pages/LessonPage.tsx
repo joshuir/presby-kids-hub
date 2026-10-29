@@ -3,6 +3,7 @@
 import { VerseChallenge } from "@/components/games/VerseChallenge";
 import { Buddy } from "@/components/games/Mascot";
 import Link from "next/link";
+import { SplitWords } from "@/components/motion/SplitWords";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Download, FileText, HandHeart, Image as ImageIcon, Music, Printer, Sparkles } from "lucide-react";
 import { Container } from "@/components/site/Container";
@@ -50,11 +51,11 @@ export function LessonPage() {
       <header className="relative overflow-hidden">
         <div aria-hidden className="dot-grid absolute inset-0 [mask-image:linear-gradient(180deg,#000_20%,transparent)]" />
         <Container className="relative max-w-4xl py-12">
-          <nav aria-label="Breadcrumb" className="text-sm font-bold text-ink/50">
+          <nav aria-label="Breadcrumb" data-ph style={{ "--i": 0 } as React.CSSProperties} className="text-sm font-bold text-ink/50">
             <Link href={`/classes/view/?c=${c.id}`} className="hover:text-ink">{c.name}</Link> · {fmtDate(l.lessonDate)}
           </nav>
-          <h1 className="mt-3 font-display text-5xl font-extrabold leading-[1.02] sm:text-6xl text-balance">{l.title}</h1>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <h1 className="mt-3 font-display text-5xl font-extrabold leading-[1.02] sm:text-6xl text-balance"><SplitWords hero text={l.title} mark="none" /></h1>
+          <div data-ph style={{ "--i": 2 } as React.CSSProperties} className="mt-4 flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-ink px-3.5 py-1.5 text-sm font-bold text-white">{l.bibleRef}</span>
             <span className="rounded-full bg-sun-soft px-3.5 py-1.5 text-sm font-bold text-[#9A6400]">{l.topic}</span>
             <button type="button" onClick={() => window.print()} className="no-print inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-sm font-bold shadow-soft ring-1 ring-ink/10">

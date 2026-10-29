@@ -28,14 +28,22 @@ import { classLessons } from "@/lib/format";
 const STEP_ICONS = [Music, BookHeart, Sparkles, ShieldCheck];
 const STEP_TONES = ["bg-sky-soft text-blueBrand-700", "bg-sun-soft text-[#9A6400]", "bg-[#FFE8E1] text-[#C2410C]", "bg-[#DCFCE7] text-[#15803D]"];
 
+/** blue · sun · navy · mint — the original site's stat-card colours */
+const STAT_TONES = [
+  ["bg-blueBrand-600 text-white", "text-white/75"],
+  ["bg-sun text-ink", "text-ink/65"],
+  ["bg-ink text-white", "text-white/70"],
+  ["bg-[#DCFCE7] text-ink", "text-ink/60"],
+] as const;
+
 function Stats() {
   const s = useSettings();
   return (
     <div data-reveal className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {s.stats.map(parts).map(([label, value], i) => (
-        <div key={label} data-stagger data-tilt="6" className={`rounded-[1.6rem] p-5 ${["bg-sky-soft", "bg-sun-soft", "bg-[#FFE8E1]", "bg-[#DCFCE7]"][i % 4]}`}>
+        <div key={label} data-stagger data-tilt="6" data-card className={`rounded-[1.6rem] p-5 ${STAT_TONES[i % 4][0]}`}>
           <div data-count={value} className="font-display text-4xl font-extrabold sm:text-5xl">{value}</div>
-          <div className="mt-1 text-sm font-bold text-ink/60">{label}</div>
+          <div className={`mt-1 text-sm font-bold ${STAT_TONES[i % 4][1]}`}>{label}</div>
         </div>
       ))}
     </div>
@@ -142,10 +150,10 @@ export function HomePage() {
 
       {/* classes */}
       <Container className="mt-24">
-        <SectionHeading eyebrow="Classes" title="A class for every age" intro="Four groups. Nine classes. One Bible story each week." action={{ href: "/classes/", label: "All classes" }} />
+        <SectionHeading eyebrow="Classes" title="A class for every age" intro="Four groups. Nine classes. One Bible story each week." />
         <Reveal watch={classes.length} className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {s.groups.map(parts).map(([key, label, ages, desc, photo]) => (
-            <Link key={key} data-stagger data-tilt="5" href={`/classes/#${key}`} className="group card overflow-hidden">
+            <Link key={key} data-stagger data-tilt="5" data-cursor="Explore" href={`/classes/#${key}`} className="group card overflow-hidden">
               <div className="relative">
                 {photo || GROUP_PHOTOS[key] ? (
                   <div className="zoom-img aspect-[16/11]">
@@ -188,10 +196,13 @@ export function HomePage() {
 
       {/* featured lesson */}
       {featured ? (
-        <Container className="mt-24">
-          <Reveal className="relative overflow-hidden rounded-[2rem] bg-blueBrand-600 p-6 text-white sm:p-12">
-            <div aria-hidden className="dot-grid absolute inset-0 opacity-20" />
-            <div className="relative grid items-center gap-8 lg:grid-cols-[1.3fr_1fr]">
+        <section className="relative mt-24 overflow-hidden bg-ink py-16 text-white sm:py-24">
+          <span aria-hidden className="pointer-events-none absolute -left-24 top-0 h-[28rem] w-[28rem] rounded-full bg-blueBrand-600/30 blur-3xl" />
+          <span aria-hidden className="pointer-events-none absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-sun/15 blur-3xl" />
+          <div aria-hidden className="dot-grid absolute inset-0 opacity-[0.12]" />
+          <Container className="relative">
+          <Reveal>
+            <div className="grid items-center gap-8 lg:grid-cols-[1.3fr_1fr]">
               <div>
                 <Eyebrow tone="white">Featured Bible lesson · {new Date(featured.lessonDate + "T12:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</Eyebrow>
                 <h2 className="mt-3 font-display text-4xl font-extrabold sm:text-6xl">{featured.title}</h2>
@@ -199,10 +210,9 @@ export function HomePage() {
                 <p className="mt-3 max-w-lg text-white/75">Every class explores this passage on Sunday. Keep the conversation going at home.</p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Link href={`/classes/lesson/?c=${featured.classId}&l=${featured.slug}`} className="btn btn-sun" data-magnetic>Read the lesson</Link>
-                  <Link href="/classes/" className="btn bg-white/15 text-white ring-1 ring-white/30">Choose your child&apos;s class</Link>
                 </div>
               </div>
-              <figure className="rounded-[1.6rem] bg-white p-6 text-ink shadow-card">
+              <figure className="rounded-[1.6rem] bg-white p-6 text-ink shadow-[8px_8px_0_#FFC53D] sm:p-8">
                 <figcaption className="text-xs font-extrabold uppercase tracking-wider text-blueBrand-600">Memory verse</figcaption>
                 <blockquote data-scrub-words className="mt-2 font-display text-3xl font-extrabold leading-tight">
                   {`“${featured.memoryVerse}”`.split(" ").map((w, i) => (
@@ -213,14 +223,15 @@ export function HomePage() {
               </figure>
             </div>
           </Reveal>
-        </Container>
+          </Container>
+        </section>
       ) : null}
 
       {/* kids zone */}
       <Container className="mt-24">
         <SectionHeading eyebrow="Kids Zone" title="Play, learn and wear your faith" intro="Bible games that grow with your child, and a clothing collection you can try in every colour." tone="mint" />
         <Reveal className="mt-8 grid gap-4 lg:grid-cols-2">
-          <Link data-stagger data-tilt="4" href="/games/" className="group relative overflow-hidden rounded-[2rem] bg-[#58CC02] p-6 text-white shadow-[0_6px_0_#46A302] sm:p-8">
+          <Link data-stagger data-tilt="4" data-cursor="Play" href="/games/" className="group relative overflow-hidden rounded-[2rem] bg-[#58CC02] p-6 text-white shadow-[0_6px_0_#46A302] sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <span className="eyebrow bg-white/20 text-white"><Gamepad2 className="h-3.5 w-3.5" aria-hidden /> Bible Games</span>
@@ -236,7 +247,7 @@ export function HomePage() {
             </div>
             <span className="btn mt-6 bg-white text-[#46A302]">Start playing <ArrowRight className="h-4 w-4" aria-hidden /></span>
           </Link>
-          <Link data-stagger data-tilt="4" href="/collection/" className="group relative overflow-hidden rounded-[2rem] bg-[#EEEDE8] p-6 sm:p-8">
+          <Link data-stagger data-tilt="4" data-cursor="Shop" href="/collection/" className="group relative overflow-hidden rounded-[2rem] bg-[#EEEDE8] p-6 sm:p-8">
             <div className="grid items-center gap-4 sm:grid-cols-[1fr_190px]">
               <div>
                 <span className="eyebrow bg-white text-ink"><Shirt className="h-3.5 w-3.5" aria-hidden /> Clothing Collection</span>
@@ -272,13 +283,13 @@ export function HomePage() {
           <SectionHeading eyebrow="Gallery" title="Moments worth remembering" action={{ href: "/gallery/", label: "View gallery" }} tone="sun" />
         </Container>
         <div className="mt-8">
-          <GalleryRail albums={albums.length ? albums : gallery} title="Gallery" speed={50} links={[{ href: "/gallery/", label: "All albums" }, { href: "/events/", label: "Upcoming events" }]} />
+          <GalleryRail albums={albums.length ? albums : gallery} title="" />
         </div>
       </div>
 
       {/* teachers */}
       <Container className="mt-24">
-        <SectionHeading eyebrow="Our teachers" title="Caring people, trained and checked" intro="Every child known by name." action={{ href: "/about/#team", label: `See all ${teachers.length} teachers` }} tone="mint" />
+        <SectionHeading eyebrow="Our teachers" title="Caring people, trained and checked" intro="Every child known by name." tone="mint" />
         <div className="mt-4"><TeamRoster heading={false} filter={false} limit={5} /></div>
       </Container>
 

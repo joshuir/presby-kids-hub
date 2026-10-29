@@ -67,9 +67,9 @@ function DesktopItem({ item, active, open, setOpen }: { item: NavItem; active: b
   );
   if (!hasMenu) {
     return (
-      <Link href={item.href} aria-current={active ? "page" : undefined} className={cls}>
+      <Link href={item.href} aria-current={active ? "page" : undefined} className={cls} data-scramble>
         <Icon className="h-4 w-4" aria-hidden strokeWidth={2.3} />
-        {item.label}
+        <span data-scramble-text>{item.label}</span>
       </Link>
     );
   }
@@ -91,9 +91,9 @@ function DesktopItem({ item, active, open, setOpen }: { item: NavItem; active: b
           // a mouse click right after hover-open should keep the menu open, not toggle it shut
           if (open && Date.now() - hoverAt.current < 600) return;
           setOpen(open ? null : item.key);
-        }} className={cls}>
+        }} className={cls} data-scramble>
         <Icon className="h-4 w-4" aria-hidden strokeWidth={2.3} />
-        {item.label}
+        <span data-scramble-text>{item.label}</span>
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} aria-hidden />
       </button>
       <AnimatePresence>

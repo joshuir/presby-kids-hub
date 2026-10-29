@@ -13,7 +13,7 @@ export function CollageCard({ a, i }: { a: GalleryDoc; i: number }) {
   const photos = albumPhotos(a);
   const third = (k: number) => photos.filter((_, j) => j % 3 === k);
   return (
-    <Link href={`/gallery/?album=${a.id}`} data-tilt="4" className="group card block overflow-hidden p-2.5">
+    <Link href={`/gallery/?album=${a.id}`} data-cursor="View" data-tilt="4" className="group card block overflow-hidden p-2.5">
       {photos.length ? (
         <div className="grid aspect-[5/4] grid-cols-[1.6fr_1fr] grid-rows-2 gap-2">
           <RotatingImage images={third(0).length ? third(0) : photos} alt={a.title} offset={i * 3} className="row-span-2 rounded-[1.1rem]" width={700} height={800} />

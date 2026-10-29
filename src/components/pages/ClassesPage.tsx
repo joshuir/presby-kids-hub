@@ -48,7 +48,7 @@ export function ClassesPage() {
                     const { current } = classLessons(lessons, c.id);
                     const names = c.teacherIds.map((id) => teachers.find((t) => t.id === id)?.name).filter(Boolean);
                     return (
-                      <Link key={c.id} data-stagger href={`/classes/view/?c=${c.id}`} className="group card flex flex-col p-5 transition hover:-translate-y-1 sm:p-6">
+                      <Link key={c.id} data-stagger data-cursor="Explore" href={`/classes/view/?c=${c.id}`} className="group card flex flex-col p-5 transition hover:-translate-y-1 sm:p-6">
                         <div className="flex items-center justify-between">
                           <span className="grid h-12 w-12 place-items-center rounded-2xl font-display text-2xl font-extrabold text-white" style={{ background: c.color }}>{c.number}</span>
                           <span className="rounded-full bg-paper px-3 py-1 text-xs font-extrabold">{c.ageRange}</span>

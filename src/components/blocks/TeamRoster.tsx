@@ -77,6 +77,7 @@ export function TeamRoster({ heading = true, limit, filter = true }: { heading?:
           <SplitWords text={s.teamTitle || "Meet the team behind the classes"} mark="none" />
         </h2>
       ) : null}
+      {heading && s.teamIntro ? <p data-reveal className="mt-5 max-w-2xl text-lg leading-8 text-ink/65">{s.teamIntro}</p> : null}
 
       {filter ? (
         <div className="no-scrollbar mt-8 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filter teachers by team">

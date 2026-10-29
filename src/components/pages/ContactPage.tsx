@@ -57,7 +57,7 @@ export function ContactPage() {
       <Container className="mt-20">
         <div className="grid gap-8 [&>*]:min-w-0 lg:grid-cols-[1fr_1.6fr]">
           <SectionHeading eyebrow="FAQs" title="Before you visit" intro="Quick answers to the questions we hear most." />
-          <Faqs askHref="#form-title" />
+          <Faqs askHref="" />
         </div>
       </Container>
 

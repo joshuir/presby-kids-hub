@@ -18,7 +18,9 @@ export type FieldType =
   | "classRef"
   | "ref"
   | "refs"
-  | "imageList";
+  | "imageList"
+  /** not a value: a titled divider that groups the fields below it */
+  | "heading";
 
 export type Field = {
   key: string;
@@ -38,18 +40,28 @@ const STATUS_HELP = "Use Publish / Unpublish / Schedule below to control when fa
 
 export const SCHEMAS: Record<Exclude<CollectionName, "leaderboard">, Field[]> = {
   settings: [
+    { key: "_h_site", label: "Site & header", type: "heading" },
     { key: "siteName", label: "Site name", type: "text", required: true },
     { key: "churchName", label: "Church name (under the logo)", type: "text" },
     { key: "ctaLabel", label: "Header button text", type: "text" },
-    { key: "footerTagline", label: "Footer — tagline under the logo", type: "text", wide: true },
-    { key: "footerLinks", label: "Footer — links (one per line: Label|/page/)", type: "lines", wide: true },
-    { key: "footerBlurb", label: "About-the-ministry blurb (used when the tagline is empty)", type: "textarea", wide: true },
-    { key: "animationLevel", label: "Animations across the site", type: "select", options: ["full", "reduced", "off"], help: "Visitors who ask their device for reduced motion always get no animation." },
-    { key: "galleryRotateSeconds", label: "Gallery — seconds per photo change", type: "number" },
-    { key: "commentsOpen", label: "Blog — allow comments", type: "select", options: ["yes", "no"] },
-    { key: "commentsNote", label: "Blog — note shown above the comment box", type: "textarea", wide: true },
-    { key: "teamTitle", label: "Team page — title", type: "text", wide: true },
-    { key: "teamIntro", label: "Team page — intro", type: "textarea", wide: true },
+
+    { key: "_h_motion", label: "Animations & effects", type: "heading", help: "Changes apply on the next page load — no redeploy needed." },
+    { key: "animationLevel", label: "Animations across the site", type: "select", options: ["full", "reduced", "off"], help: "full = every effect · reduced = gentle fades only · off = none." },
+    { key: "reduceMotionMode", label: "Visitors whose device asks for reduced motion", type: "select", options: ["gentle", "off"], help: "gentle = soft fades, no movement (recommended) · off = no animation at all." },
+    { key: "fxHeroIntro", label: "Page heroes animate in", type: "select", options: ["yes", "no"] },
+    { key: "fxCursor", label: "Custom cursor with labels (mouse only)", type: "select", options: ["yes", "no"] },
+    { key: "fxSpotlight", label: "Card spotlight that follows the mouse", type: "select", options: ["yes", "no"] },
+    { key: "fxScramble", label: "Menu text shuffle on hover", type: "select", options: ["yes", "no"] },
+    { key: "fxParallax", label: "Parallax photos while scrolling", type: "select", options: ["yes", "no"] },
+    { key: "fxMagnetic", label: "Magnetic buttons", type: "select", options: ["yes", "no"] },
+    { key: "fxTilt", label: "3D tilt on stat cards", type: "select", options: ["yes", "no"] },
+    { key: "fxProgress", label: "Reading-progress bar at the top", type: "select", options: ["yes", "no"] },
+    { key: "fxPageFade", label: "Fade between pages", type: "select", options: ["yes", "no"] },
+    { key: "galleryStripSeconds", label: "Gallery strips — seconds per full loop (lower = faster)", type: "number" },
+    { key: "galleryRotateSeconds", label: "Gallery collages — seconds per photo change", type: "number" },
+    { key: "shopRotateSeconds", label: "Clothing carousels — seconds per slide", type: "number" },
+
+    { key: "_h_home", label: "Home page", type: "heading" },
     { key: "heroBadge", label: "Home — badge above the headline", type: "text" },
     { key: "heroTitle", label: "Home — headline (first line)", type: "text" },
     { key: "heroWords", label: "Home — typed words (one per line)", type: "lines" },
@@ -67,21 +79,36 @@ export const SCHEMAS: Record<Exclude<CollectionName, "leaderboard">, Field[]> = 
     { key: "sundaySteps", label: "Sunday steps (one per line: Title|Text)", type: "lines", wide: true },
     { key: "groups", label: "Age groups (one per line: key|Name|Ages|Description) — keys: beginners, primary, juniors, seniors", type: "lines", wide: true },
     { key: "featuredLessonId", label: "Featured Bible lesson (home page)", type: "ref", source: "lessons", wide: true },
-    { key: "aboutTitle", label: "About — headline", type: "text" },
-    { key: "aboutSubtitle", label: "About — subtitle", type: "text" },
-    { key: "vision", label: "About — vision", type: "textarea", wide: true },
-    { key: "missionIntro", label: "About — mission intro", type: "text", wide: true },
-    { key: "missionItems", label: "About — mission points (one per line: Title|Text)", type: "lines", wide: true },
-    { key: "historyTitle", label: "History — title", type: "text" },
+
+    { key: "_h_about", label: "About page", type: "heading", help: "The page hero is edited under Page heroes → About us." },
+    { key: "aboutSections", label: "Sections (one per line: id|Jump-bar label|yes/no) — reorder lines to reorder the page", type: "lines", wide: true, help: "ids: about-us, team, history, achievements" },
+    { key: "aboutTitle", label: "Headline", type: "text" },
+    { key: "aboutSubtitle", label: "Subtitle", type: "text" },
+    { key: "visionTitle", label: "Vision — heading", type: "text" },
+    { key: "vision", label: "Vision — text", type: "textarea", wide: true },
+    { key: "missionTitle", label: "Mission — heading", type: "text" },
+    { key: "missionIntro", label: "Mission — intro", type: "text", wide: true },
+    { key: "missionItems", label: "Mission — points (one per line: Title|Text)", type: "lines", wide: true },
+    { key: "teamTitle", label: "Team — heading", type: "text", wide: true },
+    { key: "teamIntro", label: "Team — intro", type: "textarea", wide: true },
+    { key: "historyTitle", label: "History — heading", type: "text" },
     { key: "historyIntro", label: "History — intro", type: "textarea", wide: true },
     { key: "historyPdf", label: "History — downloadable document (PDF or Word)", type: "media", accept: "application/pdf,.doc,.docx" },
-    { key: "achievementsTitle", label: "History — achievements heading", type: "text", wide: true },
+    { key: "achievementsTitle", label: "Achievements — heading", type: "text", wide: true },
+
+    { key: "_h_blog", label: "Blog", type: "heading" },
+    { key: "commentsOpen", label: "Allow comments", type: "select", options: ["yes", "no"] },
+    { key: "commentsNote", label: "Note shown above the comment box", type: "textarea", wide: true },
+
+    { key: "_h_app", label: "Mobile app section", type: "heading" },
     { key: "showApp", label: "Show the mobile app section", type: "select", options: ["yes", "no"] },
     { key: "appTitle", label: "App — title", type: "text" },
     { key: "appText", label: "App — text", type: "text", wide: true },
     { key: "googlePlayUrl", label: "App — Google Play link", type: "text" },
     { key: "appStoreUrl", label: "App — App Store link", type: "text" },
-    { key: "socials", label: "Social channels (one per line: Network|Handle|Button|URL)", type: "lines", wide: true },
+
+    { key: "_h_contact", label: "Contact, social & footer", type: "heading" },
+    { key: "socials", label: "Social channels (one per line: Network|Handle|Button|URL)", type: "lines", wide: true, help: "Network names that get their official icon: Facebook, Instagram, YouTube, TikTok, WhatsApp, X, LinkedIn, Spotify." },
     { key: "phone", label: "Phone", type: "text" },
     { key: "whatsapp", label: "WhatsApp number", type: "text" },
     { key: "email", label: "Email", type: "text" },
@@ -89,7 +116,12 @@ export const SCHEMAS: Record<Exclude<CollectionName, "leaderboard">, Field[]> = 
     { key: "mapQuery", label: "Google Maps search", type: "text", wide: true },
     { key: "newsletterTitle", label: "Newsletter — title", type: "text" },
     { key: "newsletterText", label: "Newsletter — text", type: "text" },
-    { key: "pagesUpdated", label: "Policy pages — 'last updated' date", type: "text" },
+    { key: "footerTagline", label: "Footer — tagline under the logo", type: "text", wide: true },
+    { key: "footerLinks", label: "Footer — links (one per line: Label|/page/)", type: "lines", wide: true },
+    { key: "footerBlurb", label: "About-the-ministry blurb (used when the tagline is empty)", type: "textarea", wide: true },
+
+    { key: "_h_policy", label: "Policy pages", type: "heading" },
+    { key: "pagesUpdated", label: "'Last updated' date", type: "text" },
     { key: "safeguardingBody", label: "Safeguarding page (## heading, - bullet, **bold**)", type: "textarea", wide: true },
     { key: "accessibilityBody", label: "Accessibility page", type: "textarea", wide: true },
     { key: "privacyBody", label: "Privacy page", type: "textarea", wide: true },
@@ -168,13 +200,14 @@ export const SCHEMAS: Record<Exclude<CollectionName, "leaderboard">, Field[]> = 
   ],
   gallery: [
     { key: "title", label: "Album title", type: "text", required: true, wide: true },
-    { key: "category", label: "Category (e.g. Children Harvest, Camping)", type: "text" },
+    { key: "category", label: "Event category (e.g. Children Harvest, Camping) — shown in the gallery's category menu", type: "text" },
+    { key: "eventId", label: "Linked event (optional — helps visitors find these photos by searching the event)", type: "ref", source: "events", wide: true },
     { key: "date", label: "Month (YYYY-MM)", type: "text" },
     { key: "featured", label: "Show on the home page", type: "select", options: ["yes", "no"] },
     { key: "order", label: "Display order", type: "number" },
     { key: "cover", label: "Cover photo", type: "media" },
     { key: "description", label: "Description", type: "textarea", wide: true },
-    { key: "media", label: "Photos & videos (group photos only, with consent)", type: "mediaList", wide: true },
+    { key: "media", label: "Photos & videos (group photos only, with consent) — add a caption to make a photo searchable", type: "mediaList", wide: true },
   ],
   faqs: [
     { key: "question", label: "Question", type: "text", required: true, wide: true },

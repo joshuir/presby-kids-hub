@@ -293,7 +293,7 @@ export function CmsApp() {
     if (tab === "teachers") return `/about/?teacher=${d.id}#team`;
     if (tab === "milestones") return "/about/#history";
     if (tab === "heroes") {
-      const map: Record<string, string> = { about: "/about/", team: "/about/#team", history: "/about/#history", classes: "/classes/", events: "/events/", blog: "/blog/", gallery: "/gallery/", contact: "/contact/", games: "/games/", collection: "/collection/", safeguarding: "/safeguarding/", accessibility: "/accessibility/", privacy: "/privacy/", terms: "/terms/" };
+      const map: Record<string, string> = { about: "/about/", classes: "/classes/", events: "/events/", blog: "/blog/", gallery: "/gallery/", contact: "/contact/", games: "/games/", collection: "/collection/", safeguarding: "/safeguarding/", accessibility: "/accessibility/", privacy: "/privacy/", terms: "/terms/" };
       return map[String(d.id)] ?? "/";
     }
     if (tab === "faqs") return "/contact/";
@@ -498,8 +498,15 @@ export function CmsApp() {
                         <ProductPreview product={editing as unknown as ProductDoc} />
                       </div>
                     ) : null}
+                    {SCHEMAS[tab as Exclude<CollectionName, "leaderboard">].some((f) => f.type === "heading") ? (
+                      <nav aria-label="Jump to a group of settings" className="sticky top-0 z-10 -mx-1 flex flex-wrap gap-1.5 bg-white/95 px-1 py-2 backdrop-blur md:col-span-2">
+                        {SCHEMAS[tab as Exclude<CollectionName, "leaderboard">].filter((f) => f.type === "heading").map((f) => (
+                          <a key={f.key} href={`#cmsh-${f.key}`} className="rounded-full bg-blueBrand-50 px-3 py-1.5 text-xs font-bold text-blueBrand-800 hover:bg-blueBrand-100">{f.label}</a>
+                        ))}
+                      </nav>
+                    ) : null}
                     {SCHEMAS[tab as Exclude<CollectionName, "leaderboard">].map((f) => (
-                      <div key={f.key} className={f.wide ? "md:col-span-2" : ""}>
+                      <div key={f.key} className={f.wide || f.type === "heading" ? "md:col-span-2" : ""}>
                         <FieldEditor
                           field={f}
                           doc={editing}

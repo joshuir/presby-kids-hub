@@ -154,34 +154,36 @@ export function Achievements({ items, title }: { items: MilestoneDoc[]; title: s
   );
 }
 
-/** Timeline, download and achievements — shown as a section of the About page. */
-export function HistorySection() {
+/** One part of the history area on the About page: the timeline (with download) or the achievements. */
+export function HistorySection({ part }: { part: "history" | "achievements" }) {
   const s = useSettings();
   const all = useContent("milestones");
   const timeline = (all ?? []).filter((m) => (m.kind || "milestone") === "milestone").sort((a, b) => a.year.localeCompare(b.year) || a.order - b.order);
   const wins = (all ?? []).filter((m) => m.kind === "achievement");
-  return (
-    <div className="print-history overflow-x-clip">
-      <section id="history" className="scroll-mt-28">
-        <Container className="mt-28">
-          <div className="flex flex-col items-center text-center">
-            <p className="eyebrow">Since 2006</p>
-            <h2 className="mt-3 font-display text-4xl font-extrabold leading-[1.02] sm:text-6xl">
-              <SplitWords text={s.historyTitle || "Twenty years of growing faith"} mark="none" />
-            </h2>
-            {s.historyIntro ? <p data-reveal className="mt-4 max-w-2xl text-lg leading-8 text-ink/65">{s.historyIntro}</p> : null}
-            <HistoryDownload className="mt-8" />
-          </div>
-        </Container>
-        <Container className="mt-20 max-w-6xl">
-          {all ? <Timeline items={timeline} /> : <div className="h-96 animate-pulse rounded-[2rem] bg-white/60" />}
-        </Container>
-      </section>
-      <section id="achievements" className="scroll-mt-28">
+  if (part === "achievements") {
+    return (
+      <section id="achievements" className="print-history scroll-mt-28 overflow-x-clip">
         <Container className="mt-28">
           <Achievements items={wins} title={s.achievementsTitle || "Achievements we give thanks for"} />
         </Container>
       </section>
-    </div>
+    );
+  }
+  return (
+    <section id="history" className="print-history scroll-mt-28 overflow-x-clip">
+      <Container className="mt-28">
+        <div className="flex flex-col items-center text-center">
+          <p className="eyebrow bg-sun-soft text-[#9A6400]">Since 2006</p>
+          <h2 className="mt-3 font-display text-4xl font-extrabold leading-[1.02] sm:text-6xl">
+            <SplitWords text={s.historyTitle || "Twenty years of growing faith"} mark="none" />
+          </h2>
+          {s.historyIntro ? <p data-reveal className="mt-4 max-w-2xl text-lg leading-8 text-ink/65">{s.historyIntro}</p> : null}
+          <HistoryDownload className="mt-8" />
+        </div>
+      </Container>
+      <Container className="mt-20 max-w-6xl">
+        {all ? <Timeline items={timeline} /> : <div className="h-96 animate-pulse rounded-[2rem] bg-white/60" />}
+      </Container>
+    </section>
   );
 }

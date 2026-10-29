@@ -58,7 +58,7 @@ export function Faqs({ askHref = "/contact/#form-title" }: { askHref?: string })
           );
         })}
       </ul>
-      <Link href={askHref} className="btn btn-dark mt-6">Ask us anything</Link>
+      {askHref ? <Link href={askHref} className="btn btn-dark mt-6">Ask us anything</Link> : null}
     </div>
   );
 }
