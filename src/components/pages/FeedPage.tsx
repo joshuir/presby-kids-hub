@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ShieldCheck, X } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
 import { PostCard } from "@/components/blocks/PostCard";
@@ -11,14 +11,14 @@ import { PhoneMockup } from "@/components/blocks/PhoneMockup";
 import { useContent } from "@/lib/useContent";
 import { sized } from "@/lib/img";
 import { initials } from "@/lib/site";
-import { cn } from "@/lib/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 
 const FILTERS = [
-  ["all", "All"],
-  ["verse", "Verses"],
-  ["photo", "Photos"],
-  ["video", "Videos"],
-  ["news", "News"],
+  ["all", "All", "✨"],
+  ["verse", "Verses", "📖"],
+  ["photo", "Photos", "📷"],
+  ["video", "Videos", "🎬"],
+  ["news", "News & events", "📣"],
 ] as const;
 
 export function FeedPage() {
@@ -50,41 +50,43 @@ export function FeedPage() {
         <div id="feed" className="min-w-0 scroll-mt-28">
           {/* sticky controls — compact on phones */}
           <div className="sticky top-[76px] z-20 -mx-4 bg-cream/90 px-4 pb-3 pt-2 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:px-0">
-            {authors.length ? (
-              <ul className="no-scrollbar flex gap-3 overflow-x-auto pb-2" aria-label="Posts by teacher">
-                {authors.map((t) => {
-                  const on = who === t.id;
-                  return (
-                    <li key={t.id} className="shrink-0">
-                      <button type="button" onClick={() => setWho(on ? null : t.id)} aria-pressed={on} className="flex w-[68px] flex-col items-center gap-1">
-                        <span className={cn("rounded-full p-[3px]", on ? "bg-blueBrand-600" : "bg-gradient-to-tr from-sun via-coral to-blueBrand-500")}>
-                          <span className="block h-14 w-14 overflow-hidden rounded-full border-[3px] border-cream bg-white">
-                            {t.photo ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={sized(t.photo, 120, 120)} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              <span className="grid h-full w-full place-items-center text-sm font-extrabold">{initials(t.name)}</span>
-                            )}
-                          </span>
-                        </span>
-                        <span className={cn("w-full truncate text-center text-xs font-bold", on ? "text-blueBrand-700" : "text-ink/70")}>{t.name.split(" ")[0]}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-            <div className="no-scrollbar flex gap-2 overflow-x-auto" role="tablist" aria-label="Filter posts">
-              {FILTERS.map(([k, l]) => (
-                <button key={k} type="button" role="tab" aria-selected={f === k} onClick={() => setF(k)} className={cn("whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition", f === k ? "bg-ink text-white" : "bg-white ring-1 ring-ink/10")}>
-                  {l}
-                </button>
-              ))}
-              {who ? (
-                <button type="button" onClick={() => setWho(null)} className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-sky-soft px-3 py-2 text-sm font-bold text-blueBrand-700">
-                  {teachers.find((t) => t.id === who)?.name.split(" ")[0]} <X className="h-3.5 w-3.5" aria-hidden />
-                </button>
-              ) : null}
+            <div className="grid grid-cols-2 gap-2">
+              <Dropdown
+                label="Post type"
+                hideLabel
+                testId="post-type"
+                value={f}
+                onChange={(v) => setF(v as (typeof FILTERS)[number][0])}
+                options={FILTERS.map(([k, l, icon]) => ({
+                  value: k,
+                  label: k === "all" ? "All posts" : l,
+                  icon,
+                  count: (posts ?? []).filter((p) => (k === "all" || p.kind === k || (k === "news" && p.kind === "event")) && (!who || p.authorId === who)).length,
+                }))}
+              />
+              <Dropdown
+                label="Teacher"
+                hideLabel
+                testId="post-teacher"
+                align="right"
+                value={who ?? ""}
+                onChange={(v) => setWho(v || null)}
+                options={[
+                  { value: "", label: "All teachers", icon: "👥", count: (posts ?? []).length },
+                  ...authors.map((t) => ({
+                    value: t.id,
+                    label: t.name,
+                    hint: t.role || undefined,
+                    count: (posts ?? []).filter((p) => p.authorId === t.id).length,
+                    icon: t.photo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={sized(t.photo, 60, 60)} alt="" className="h-6 w-6 rounded-full object-cover" />
+                    ) : (
+                      <span className="grid h-6 w-6 place-items-center rounded-full bg-sky-soft text-[10px] font-extrabold">{initials(t.name)}</span>
+                    ),
+                  })),
+                ]}
+              />
             </div>
           </div>
           {!posts ? <Loading label="Loading the feed…" /> : null}

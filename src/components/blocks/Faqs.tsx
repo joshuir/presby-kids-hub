@@ -1,39 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { useContent } from "@/lib/useContent";
 import { cn } from "@/lib/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 
 export function Faqs({ askHref = "/contact/#form-title" }: { askHref?: string }) {
   const faqs = useContent("faqs") ?? [];
   const cats = ["All questions", ...Array.from(new Set(faqs.map((f) => f.category)))];
   const [cat, setCat] = useState("All questions");
   const [open, setOpen] = useState<string | null>(null);
-  const list = faqs.filter((f) => cat === "All questions" || f.category === cat);
+  const list = faqs.filter((f) => cat === "All questions" || f.category === cat).sort((a, b) => cats.indexOf(a.category) - cats.indexOf(b.category));
   return (
     <div>
-      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Question topics">
-        {cats.map((c) => (
-          <button
-            key={c}
-            type="button"
-            role="tab"
-            aria-selected={cat === c}
-            onClick={() => setCat(c)}
-            className={cn("whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition", cat === c ? "bg-ink text-white" : "bg-white text-ink/70 ring-1 ring-ink/10 hover:text-ink")}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
+      <Dropdown
+        label="Topic"
+        hideLabel
+        testId="faq-topic"
+        className="w-full sm:w-72"
+        value={cat}
+        onChange={(c) => { setCat(c); setOpen(null); }}
+        options={cats.map((c) => ({ value: c, label: c, count: c === "All questions" ? faqs.length : faqs.filter((f) => f.category === c).length }))}
+      />
       <ul className="mt-5 grid gap-3">
-        {list.map((f) => {
+        {list.map((f, i) => {
           const isOpen = open === f.id;
+          const head = cat === "All questions" && f.category && f.category !== list[i - 1]?.category ? f.category : null;
           return (
-            <li key={f.id} className="card overflow-hidden">
+            <Fragment key={f.id}>
+            {head ? <li role="presentation" className={cn("px-1 text-xs font-extrabold uppercase tracking-wider text-ink/50", i > 0 && "mt-4")}>{head}</li> : null}
+            <li className="card overflow-hidden">
               <h3>
                 <button
                   type="button"
@@ -55,6 +54,7 @@ export function Faqs({ askHref = "/contact/#form-title" }: { askHref?: string })
                 ) : null}
               </AnimatePresence>
             </li>
+            </Fragment>
           );
         })}
       </ul>

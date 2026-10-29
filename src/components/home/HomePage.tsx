@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, BookHeart, Gamepad2, HandHeart, Music, Quote, Shirt, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BookHeart, BookOpen, Gamepad2, HandHeart, Heart, Music, Quote, Shirt, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { Reveal, SectionHeading, Eyebrow } from "@/components/ui/Reveal";
 import { GroupArt } from "@/components/art/Illustrations";
@@ -36,16 +36,32 @@ const STAT_TONES = [
   ["bg-[#DCFCE7] text-ink", "text-ink/60"],
 ] as const;
 
+const STAT_ICONS = [BookOpen, Users, Heart, Sparkles];
+
+/** 2 × 2 grid that fills the space beside the welcome card; numbers scale with the card so nothing overflows. */
 function Stats() {
   const s = useSettings();
   return (
-    <div data-reveal className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {s.stats.map(parts).map(([label, value], i) => (
-        <div key={label} data-stagger data-tilt="6" data-card className={`rounded-[1.6rem] p-5 ${STAT_TONES[i % 4][0]}`}>
-          <div data-count={value} className="font-display text-4xl font-extrabold sm:text-5xl">{value}</div>
-          <div className={`mt-1 text-sm font-bold ${STAT_TONES[i % 4][1]}`}>{label}</div>
-        </div>
-      ))}
+    <div data-reveal className="grid h-full grid-cols-2 gap-3 sm:gap-4">
+      {s.stats.map(parts).map(([label, value], i) => {
+        const Icon = STAT_ICONS[i % 4];
+        return (
+          <div
+            key={label}
+            data-stagger
+            data-tilt="6"
+            data-card
+            className={`relative flex min-h-[150px] min-w-0 flex-col justify-between overflow-hidden rounded-[1.6rem] p-5 sm:min-h-[180px] sm:p-6 [container-type:inline-size] ${STAT_TONES[i % 4][0]}`}
+          >
+            <span aria-hidden className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10" />
+            <Icon className={`relative h-6 w-6 ${STAT_TONES[i % 4][1]}`} aria-hidden />
+            <div className="relative">
+              <div data-count={value} className="font-display font-extrabold leading-none tracking-tight text-[clamp(2.1rem,24cqw,3.6rem)]">{value}</div>
+              <div className={`mt-2 text-sm font-bold leading-snug sm:text-[15px] ${STAT_TONES[i % 4][1]}`}>{label}</div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -106,7 +122,7 @@ export function HomePage() {
               </div>
             </div>
           </Reveal>
-          <Reveal><Stats /></Reveal>
+          <Reveal className="h-full"><Stats /></Reveal>
         </div>
       </Container>
 

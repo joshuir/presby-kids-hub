@@ -7,6 +7,7 @@ import type { TeacherDoc } from "@/lib/cms/types";
 import { initials } from "@/lib/site";
 import { useContent } from "@/lib/useContent";
 import { cn } from "@/lib/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { sized } from "@/lib/img";
 
 const TEAMS = ["All", "Beginners", "Primary", "Juniors", "Seniors", "Leadership"];
@@ -40,13 +41,15 @@ export function Teachers({ filter = false, limit }: { filter?: boolean; limit?: 
   return (
     <div>
       {filter ? (
-        <div className="no-scrollbar -mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Filter teachers">
-          {TEAMS.map((x) => (
-            <button key={x} type="button" role="tab" aria-selected={team === x} onClick={() => { setTeam(x); setSel(null); }} className={cn("whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold", team === x ? "bg-ink text-white" : "bg-white ring-1 ring-ink/10")}>
-              {x}
-            </button>
-          ))}
-        </div>
+        <Dropdown
+          label="Team"
+          hideLabel
+          testId="teachers-filter"
+          className="mb-5 w-full sm:w-72"
+          value={team}
+          onChange={(x) => { setTeam(x); setSel(null); }}
+          options={TEAMS.map((x) => ({ value: x, label: x === "All" ? "Whole team" : x, count: all.filter((t) => x === "All" || t.team === x.toLowerCase()).length }))}
+        />
       ) : null}
       <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
         <AnimatePresence mode="wait">

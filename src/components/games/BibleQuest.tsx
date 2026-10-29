@@ -7,6 +7,7 @@ import { BookOpen, Check, Crown, Flame, Heart, Lock, Star, Trophy, X, Zap } from
 import { getLeaderboard, getPublic, submitScore as saveScore } from "@/lib/cms/client";
 import type { UnitDoc } from "@/lib/cms/types";
 import { cn } from "@/lib/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 import {
   ACCESSORIES,
   ACHIEVEMENTS,
@@ -130,10 +131,35 @@ function PathView({ units, player, onStart }: { units: UnitDoc[]; player: Player
     currentRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, []);
   const currentId = state.flatMap((s) => (s.unlocked ? s.nodes : [])).find((x) => x.state === "current")?.id;
+  const currentUnit = state.find((s) => s.nodes.some((n) => n.id === currentId))?.unit.id ?? state[0]?.unit.id ?? "";
+  const [jump, setJump] = useState(currentUnit);
+  const tLabel = (t: UnitDoc["testament"]) => (t === "OT" ? "Old Testament" : t === "NT" ? "New Testament" : "Whole Bible");
   return (
     <div className="grid gap-10">
+      {state.length > 1 ? (
+        <div className="sticky top-[76px] z-20 -mx-2 -mb-4 rounded-2xl bg-cream/90 px-2 py-2 backdrop-blur-md">
+          <Dropdown
+            label="Jump to a unit"
+            hideLabel
+            testId="unit-jump"
+            className="w-full sm:w-80"
+            value={jump}
+            onChange={(id) => {
+              setJump(id);
+              document.getElementById(`unit-sec-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            options={state.map(({ unit: u, unlocked, complete, nodes }, ui) => ({
+              value: u.id,
+              label: `${ui + 1}. ${u.title}`,
+              icon: u.icon,
+              group: tLabel(u.testament),
+              hint: complete ? "Complete ✓" : !unlocked ? "Locked — finish the unit before" : `${nodes.filter((n) => n.state === "done").length}/${nodes.length} levels done · ${u.stories.length} ${u.stories.length === 1 ? "story" : "stories"}`,
+            }))}
+          />
+        </div>
+      ) : null}
       {state.map(({ unit: u, unlocked, complete, nodes }, ui) => (
-        <section key={u.id} aria-labelledby={`unit-${u.id}`}>
+        <section key={u.id} id={`unit-sec-${u.id}`} className="scroll-mt-40" aria-labelledby={`unit-${u.id}`}>
           <div className="flex items-stretch overflow-hidden rounded-2xl text-white shadow-[0_5px_0_rgba(0,0,0,.18)]" style={{ background: unlocked ? u.color : "#A8A29E" }}>
             <div className="flex-1 p-4 sm:p-5">
               <div className="text-xs font-extrabold uppercase tracking-wider text-white/80">Unit {ui + 1} · {u.testament === "Both" ? "Whole Bible" : u.testament === "OT" ? "Old Testament" : "New Testament"}</div>

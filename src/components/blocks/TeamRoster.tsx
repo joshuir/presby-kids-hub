@@ -10,9 +10,11 @@ import { useContent } from "@/lib/useContent";
 import { initials, useSettings } from "@/lib/site";
 import { sized } from "@/lib/img";
 import type { TeacherDoc } from "@/lib/cms/types";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/cn";
 
 const TEAMS = ["All", "Leadership", "Beginners", "Primary", "Juniors", "Seniors"];
+const TEAM_HINT: Record<string, string> = { Beginners: "Ages 3–5", Primary: "Ages 6–8", Juniors: "Ages 9–10", Seniors: "Ages 11–13", Leadership: "Ministry leaders" };
 
 function Portrait({ t, className }: { t: TeacherDoc; className?: string }) {
   return t.photo ? (
@@ -80,23 +82,24 @@ export function TeamRoster({ heading = true, limit, filter = true }: { heading?:
       {heading && s.teamIntro ? <p data-reveal className="mt-5 max-w-2xl text-lg leading-8 text-ink/65">{s.teamIntro}</p> : null}
 
       {filter ? (
-        <div className="no-scrollbar mt-8 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filter teachers by team">
-          {TEAMS.map((x) => (
-            <button
-              key={x}
-              type="button"
-              role="tab"
-              aria-selected={team === x}
-              onClick={() => {
-                setTeam(x);
-                setSel(null);
-              }}
-              className={cn("shrink-0 rounded-full px-4 py-2 text-sm font-bold transition", team === x ? "bg-ink text-white" : "bg-white ring-1 ring-ink/10 hover:bg-paper")}
-            >
-              {x}
-            </button>
-          ))}
-        </div>
+        <Dropdown
+          label="Team"
+          hideLabel
+          testId="team-filter"
+          className="mt-8 w-full sm:w-72"
+          value={team}
+          onChange={(x) => {
+            setTeam(x);
+            setSel(null);
+          }}
+          options={TEAMS.map((x) => ({
+            value: x,
+            label: x === "All" ? "Whole team" : x,
+            group: x === "All" ? undefined : x === "Leadership" ? "Ministry" : "Classes",
+            hint: TEAM_HINT[x],
+            count: (all ?? []).filter((t) => x === "All" || t.team === x.toLowerCase()).length,
+          }))}
+        />
       ) : null}
 
       {/* desktop / tablet */}

@@ -287,3 +287,55 @@ export const adminSetComment = (id: number, status: AdminComment["status"], repl
 
 /** Public calendar feed (Google / Apple / Outlook subscribe to this and refresh automatically). */
 export const CALENDAR_FEED = `${SUPABASE_URL}/functions/v1/cm-calendar`;
+
+// ---------------- shop orders ----------------
+export type OrderItem = { productId: string; name: string; colour: string; hex?: string; size: string; qty: number; unit: number; line: number; image?: string };
+export type Order = {
+  id: string;
+  ref: string;
+  createdAt: string;
+  updatedAt: string;
+  customer: { name: string; phone: string; email: string };
+  items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  currency: string;
+  fulfilment: { method: "delivery" | "collection"; area?: string; address?: string; point?: string; notes?: string };
+  payProvider: "paystack" | "flutterwave" | "later" | string;
+  payStatus: "pending" | "due" | "paid" | "failed" | "refunded" | "expired" | string;
+  payRef?: string;
+  paidAt?: string;
+  status: "new" | "confirmed" | "ready" | "out_for_delivery" | "completed" | "cancelled" | string;
+  notes?: string;
+  history?: Array<{ at: string; by: string; status?: string; pay?: string; note?: string }>;
+  stockReserved?: boolean;
+};
+export type NewOrder = {
+  customer: { name: string; phone: string; email: string };
+  items: Array<{ productId: string; colour: string; size: string; qty: number }>;
+  fulfilment: { method: "delivery" | "collection"; area?: string; address?: string; point?: string; notes?: string };
+  provider: "paystack" | "flutterwave" | "later";
+};
+export type CreatedOrder = { ref: string; total: number; currency: string; provider: string; mode: "test" | "live"; email: string; name: string; phone: string };
+
+/** Prices, stock and delivery fees are worked out again on the server — the browser can't change them. */
+export const createOrder = (o: NewOrder) => rpc<CreatedOrder>("cm_order_create", { p: { ...o, clientId: clientId() } });
+export const getOrder = (ref: string, contact: string) => rpc<Order>("cm_order_get", { r: ref, contact });
+/** Test mode only (CMS → Shop → Payment mode = test): completes the payment without money changing hands. */
+export const demoPay = (ref: string, contact: string) => rpc<Order>("cm_order_demo_pay", { r: ref, contact });
+export const adminOrders = () => rpc<Order[]>("cm_admin_orders");
+export const adminUpdateOrder = (id: string, status: string | null, pay: string | null, note: string | null) =>
+  rpc<Order>("cm_admin_order_update", { oid: id, st: status, pay, note });
+
+/** Ask the server to confirm a card / Mobile Money payment with Paystack or Flutterwave. */
+export async function verifyPayment(body: { ref: string; provider: "paystack" | "flutterwave"; reference?: string; transactionId?: string | number }) {
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/cm-pay-verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify(body),
+  });
+  const j = (await r.json().catch(() => ({}))) as { ok?: boolean; order?: Order; error?: string };
+  if (!r.ok) throw new Error(j.error === "not_configured" ? "Online payments aren't switched on yet — the ministry will contact you." : j.error || "Payment could not be confirmed");
+  return j.order as Order;
+}

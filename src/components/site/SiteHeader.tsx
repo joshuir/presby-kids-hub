@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, ChevronDown, Menu, X } from "lucide-react";
+import { ArrowRight, ChevronDown, Menu, ShoppingBag, X } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { NAV, activeKey, type NavItem } from "@/lib/nav";
+import { openBag, useCart } from "@/lib/cart";
 import { useSettings, parts } from "@/lib/site";
 import { useContent } from "@/lib/useContent";
 import { cn } from "@/lib/cn";
@@ -193,6 +194,7 @@ export function SiteHeader() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <HeaderBag />
             <Link href="/contact/#visit" className="btn btn-primary hidden !px-4 !py-2.5 text-sm sm:inline-flex">
               {s.ctaLabel}
             </Link>
@@ -294,5 +296,17 @@ export function SiteHeader() {
         ) : null}
       </AnimatePresence>
     </>
+  );
+}
+
+/** Shopping-bag button: only shown once something is in the bag. */
+function HeaderBag() {
+  const { count } = useCart();
+  if (!count) return null;
+  return (
+    <button type="button" onClick={openBag} aria-label={`Shopping bag, ${count} item${count === 1 ? "" : "s"}`} className="relative grid h-11 w-11 place-items-center rounded-full bg-paper text-ink ring-1 ring-ink/10 transition hover:bg-white">
+      <ShoppingBag className="h-5 w-5" aria-hidden />
+      <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-sun px-1 text-[11px] font-extrabold text-ink">{count}</span>
+    </button>
   );
 }

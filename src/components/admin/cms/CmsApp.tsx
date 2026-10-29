@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 import type { CollectionName, Status } from "@/lib/cms/types";
 import { SCHEMAS, blank, titleOf } from "./fields";
 import { FieldEditor, uploadFile } from "./FieldEditor";
@@ -11,33 +12,35 @@ import { useAdmin } from "@/components/admin/AdminGate";
 import { adminDelete, adminList, adminReset, adminUpsert, adminUpsertMany, deleteMedia, listMedia, rpc } from "@/lib/cms/client";
 import { MessagesPanel } from "./MessagesPanel";
 import { CommentsPanel } from "./CommentsPanel";
+import { OrdersPanel } from "./OrdersPanel";
 import type { ProductDoc } from "@/lib/cms/types";
 
 type Doc = Record<string, unknown> & { id?: string; status?: Status; publishAt?: string; updatedAt?: string };
-type Tab = Exclude<CollectionName, never> | "media" | "team" | "account" | "messages" | "comments";
-const PANEL_TABS = ["media", "team", "account", "messages", "comments"] as const;
+type Tab = Exclude<CollectionName, never> | "media" | "team" | "account" | "messages" | "comments" | "orders";
+const PANEL_TABS = ["media", "team", "account", "messages", "comments", "orders"] as const;
 const isPanel = (t: Tab) => (PANEL_TABS as readonly string[]).includes(t);
 /** database permission section that guards each tab */
-const PERM: Partial<Record<Tab, string>> = { settings: "pages", faqs: "pages", milestones: "pages", heroes: "pages", posts: "blog", comments: "blog", units: "questions" };
+const PERM: Partial<Record<Tab, string>> = { settings: "pages", faqs: "pages", milestones: "pages", heroes: "pages", posts: "blog", comments: "blog", units: "questions", orders: "products" };
 const ORDERED = ["classes", "products", "teachers", "milestones", "faqs", "gallery", "units", "mascots"];
 
 const TABS: { key: Tab; label: string; icon: string; group: string }[] = [
-  { key: "settings", label: "Site & pages", icon: "⚙️", group: "Website" },
-  { key: "heroes", label: "Page heroes", icon: "🖼️", group: "Website" },
-  { key: "classes", label: "Classes", icon: "🏫", group: "Website" },
-  { key: "lessons", label: "Lessons", icon: "📚", group: "Website" },
-  { key: "teachers", label: "Teachers", icon: "👩‍🏫", group: "Website" },
-  { key: "events", label: "Events", icon: "📅", group: "Website" },
-  { key: "posts", label: "Blog posts", icon: "📝", group: "Website" },
-  { key: "comments", label: "Comments", icon: "💬", group: "Website" },
-  { key: "gallery", label: "Gallery", icon: "📸", group: "Website" },
-  { key: "faqs", label: "FAQs", icon: "❔", group: "Website" },
-  { key: "milestones", label: "History & achievements", icon: "🕰️", group: "Website" },
-  { key: "units", label: "Game units", icon: "🗺️", group: "Kids Zone" },
-  { key: "questions", label: "Game questions", icon: "❓", group: "Kids Zone" },
-  { key: "mascots", label: "Mascots", icon: "🦁", group: "Kids Zone" },
-  { key: "leaderboard", label: "Leaderboard", icon: "🏆", group: "Kids Zone" },
-  { key: "products", label: "Clothing", icon: "👕", group: "Kids Zone" },
+  { key: "settings", label: "Site & pages", icon: "⚙️", group: "Site & pages" },
+  { key: "heroes", label: "Page heroes", icon: "🖼️", group: "Site & pages" },
+  { key: "faqs", label: "FAQs", icon: "❔", group: "Site & pages" },
+  { key: "milestones", label: "History & achievements", icon: "🕰️", group: "Site & pages" },
+  { key: "classes", label: "Classes", icon: "🏫", group: "Classes & teaching" },
+  { key: "lessons", label: "Lessons", icon: "📚", group: "Classes & teaching" },
+  { key: "teachers", label: "Teachers", icon: "👩‍🏫", group: "Classes & teaching" },
+  { key: "events", label: "Events", icon: "📅", group: "News & events" },
+  { key: "posts", label: "Blog posts", icon: "📝", group: "News & events" },
+  { key: "comments", label: "Comments", icon: "💬", group: "News & events" },
+  { key: "gallery", label: "Gallery", icon: "📸", group: "News & events" },
+  { key: "units", label: "Game units", icon: "🗺️", group: "Kids Zone games" },
+  { key: "questions", label: "Game questions", icon: "❓", group: "Kids Zone games" },
+  { key: "mascots", label: "Mascots", icon: "🦁", group: "Kids Zone games" },
+  { key: "leaderboard", label: "Leaderboard", icon: "🏆", group: "Kids Zone games" },
+  { key: "products", label: "Clothing", icon: "👕", group: "Shop" },
+  { key: "orders", label: "Orders", icon: "🧾", group: "Shop" },
   { key: "media", label: "Media library", icon: "🖼️", group: "Admin" },
   { key: "messages", label: "Messages", icon: "✉️", group: "Admin" },
   { key: "team", label: "Sub-admins", icon: "👥", group: "Admin" },
@@ -127,6 +130,7 @@ export function CmsApp() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [extraFilter, setExtraFilter] = useState<string>("");
+  const [levelFilter, setLevelFilter] = useState<string>("");
   const [page, setPage] = useState(0);
   const [scheduleAt, setScheduleAt] = useState("");
 
@@ -154,6 +158,7 @@ export function CmsApp() {
     setQ("");
     setStatusFilter("all");
     setExtraFilter("");
+    setLevelFilter("");
     setPage(0);
   }, [tab, load]);
 
@@ -261,16 +266,17 @@ export function CmsApp() {
     const term = q.toLowerCase();
     let list = items.filter((d) => !term || JSON.stringify(d).toLowerCase().includes(term));
     if (statusFilter !== "all") list = list.filter((d) => effectiveStatus(d) === statusFilter);
+    if (tab === "questions" && levelFilter) list = list.filter((d) => d.difficulty === levelFilter);
     if (extraFilter) {
       if (tab === "lessons") list = list.filter((d) => d.classId === extraFilter);
-      if (tab === "questions") list = list.filter((d) => d.difficulty === extraFilter || d.story === extraFilter || d.testament === extraFilter);
+      if (tab === "questions") list = list.filter((d) => d.story === extraFilter || d.testament === extraFilter);
     }
     if (tab === "leaderboard") list = [...list].sort((a, b) => Number(b.xp) - Number(a.xp));
     if (tab === "lessons") list = [...list].sort((a, b) => String(b.lessonDate).localeCompare(String(a.lessonDate)));
     if (ORDERED.includes(tab)) list = [...list].sort((a, b) => Number(a.order) - Number(b.order));
     if (tab === "posts" || tab === "events") list = [...list].sort((a, b) => String(b.date).localeCompare(String(a.date)));
     return list;
-  }, [items, q, statusFilter, extraFilter, tab]);
+  }, [items, q, statusFilter, extraFilter, levelFilter, tab]);
 
   const PAGE = 40;
   const pageItems = filtered.slice(page * PAGE, page * PAGE + PAGE);
@@ -281,6 +287,14 @@ export function CmsApp() {
   }, [items]);
 
   const stories = useMemo(() => (tab === "questions" ? [...new Set(items.map((d) => String(d.story)))].sort() : []), [items, tab]);
+  // stories grouped by testament, kept in Bible/question-bank order
+  const storyGroups = useMemo(() => {
+    const seen = new Map<string, string>();
+    items.forEach((d) => { if (tab === "questions" && d.story && !seen.has(String(d.story))) seen.set(String(d.story), String(d.testament)); });
+    return ([["OT", "Old Testament stories"], ["NT", "New Testament stories"]] as const)
+      .map(([t, l]) => [l, [...seen].filter(([, tt]) => tt === t).map(([st]) => st)] as const)
+      .filter(([, l]) => l.length);
+  }, [items, tab]);
 
   const previewUrl = (d: Doc) => {
     if (tab === "lessons" && d.classId) return `/classes/lesson/?c=${d.classId}&l=${d.slug}&preview=${d.id}`;
@@ -300,6 +314,14 @@ export function CmsApp() {
     return "/";
   };
 
+  const curGroup = TABS.find((t) => t.key === tab)?.group ?? "";
+  const goTab = (k: Tab) => {
+    if (k === tab) return;
+    if (dirty && !confirm("Discard unsaved changes?")) return;
+    setDirty(false);
+    setTab(k);
+  };
+
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -309,30 +331,39 @@ export function CmsApp() {
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {visibleTabs.map((t, i) => [
-          i === 0 || visibleTabs[i - 1].group !== t.group ? (
-            <span key={`g-${t.group}`} className="self-center whitespace-nowrap pl-2 pr-1 text-[10px] font-extrabold uppercase tracking-widest text-black/40">{t.group}</span>
-          ) : null,
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => {
-              if (dirty && !confirm("Discard unsaved changes?")) return;
-              setDirty(false);
-              setTab(t.key);
-            }}
-            className={cn(
-              "whitespace-nowrap rounded-2xl px-4 py-2 text-sm font-semibold ring-1 ring-black/10",
-              tab === t.key ? "bg-blueBrand-600 text-white ring-transparent" : "bg-white hover:bg-blueBrand-50",
-            )}
-          >
-            {t.icon} {t.label}
-          </button>,
-        ])}
+      <div className="grid gap-2 rounded-3xl bg-white p-2 shadow-soft ring-1 ring-black/5 sm:flex sm:items-center">
+        <Dropdown
+          label="CMS section"
+          hideLabel
+          testId="cms-section"
+          className="sm:w-72 sm:shrink-0"
+          buttonClassName="bg-paper"
+          value={tab}
+          onChange={(k) => goTab(k as Tab)}
+          options={visibleTabs.map((t) => ({ value: t.key, label: t.label, icon: t.icon, group: t.group }))}
+        />
+        <div className="no-scrollbar flex gap-1 overflow-x-auto" role="tablist" aria-label={`${curGroup} sections`}>
+          {visibleTabs.filter((t) => t.group === curGroup).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.key}
+              onClick={() => goTab(t.key)}
+              className={cn(
+                "whitespace-nowrap rounded-2xl px-3.5 py-2 text-sm font-semibold",
+                tab === t.key ? "bg-blueBrand-600 text-white" : "hover:bg-blueBrand-50",
+              )}
+            >
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {tab === "comments" ? (
+      {tab === "orders" ? (
+        <OrdersPanel notify={notify} />
+      ) : tab === "comments" ? (
         <CommentsPanel notify={notify} />
       ) : tab === "messages" ? (
         <MessagesPanel notify={notify} />
@@ -377,12 +408,19 @@ export function CmsApp() {
             ) : null}
             {tab === "questions" ? (
               <>
-                <select value={extraFilter} onChange={(e) => { setExtraFilter(e.target.value); setPage(0); }} className="mt-2 w-full rounded-xl px-3 py-2 text-sm ring-1 ring-black/10" aria-label="Filter questions">
-                  <option value="">All stories & levels</option>
-                  <optgroup label="Testament"><option value="OT">Old Testament</option><option value="NT">New Testament</option></optgroup>
-                  <optgroup label="Difficulty">{["easy", "medium", "hard", "expert"].map((d) => <option key={d} value={d}>{d}</option>)}</optgroup>
-                  <optgroup label="Story">{stories.map((s) => <option key={s} value={s}>{s}</option>)}</optgroup>
-                </select>
+                <div className="mt-2 grid gap-2">
+                  <select value={extraFilter} onChange={(e) => { setExtraFilter(e.target.value); setPage(0); }} className="min-w-0 rounded-xl px-3 py-2 text-sm ring-1 ring-black/10" aria-label="Filter questions by story">
+                    <option value="">All stories ({items.length})</option>
+                    <optgroup label="Testament"><option value="OT">Old Testament</option><option value="NT">New Testament</option></optgroup>
+                    {storyGroups.map(([g, list]) => (
+                      <optgroup key={g} label={g}>{list.map((st) => <option key={st} value={st}>{st} ({items.filter((d) => d.story === st).length})</option>)}</optgroup>
+                    ))}
+                  </select>
+                  <select value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setPage(0); }} className="rounded-xl px-3 py-2 text-sm capitalize ring-1 ring-black/10" aria-label="Filter questions by level">
+                    <option value="">All levels</option>
+                    {["easy", "medium", "hard", "expert"].map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
                 <BulkImport stories={stories} onDone={(n) => { notify(`Imported ${n} questions`); load("questions"); }} notify={notify} />
               </>
             ) : null}

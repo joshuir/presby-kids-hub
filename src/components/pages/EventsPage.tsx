@@ -13,6 +13,7 @@ import { SplitWords } from "@/components/motion/SplitWords";
 import { todayISO } from "@/lib/format";
 import { useContent } from "@/lib/useContent";
 import { cn } from "@/lib/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 
 export function EventsPage() {
   const events = useContent("events");
@@ -63,13 +64,20 @@ export function EventsPage() {
 
       <Container className="mt-14">
         <div id="calendar" className="flex scroll-mt-28 flex-wrap items-center justify-between gap-3">
-          <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1" role="tablist" aria-label="Event type">
-            {cats.map((c) => (
-              <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={cn("whitespace-nowrap rounded-full px-5 py-2.5 text-base font-bold", cat === c ? "bg-ink text-white" : "bg-white ring-1 ring-ink/10")}>
-                {c}
-              </button>
-            ))}
-          </div>
+          <Dropdown
+            label="Event type"
+            hideLabel
+            testId="event-type"
+            className="w-full sm:w-64"
+            value={cat}
+            onChange={setCat}
+            options={cats.map((c) => ({
+              value: c,
+              label: c === "All" ? "All event types" : c,
+              count: c === "All" ? (events ?? []).length : (events ?? []).filter((e) => e.category === c).length,
+              color: c === "All" ? undefined : (events ?? []).find((e) => e.category === c)?.color || undefined,
+            }))}
+          />
           <div className="flex rounded-full bg-white p-1 ring-1 ring-ink/10" role="tablist" aria-label="View">
             {(
               [

@@ -140,6 +140,8 @@ export type ProductDoc = BaseDoc & {
   name: string;
   category: "tee" | "hoodie" | "longsleeve" | "other";
   price: number;
+  /** optional "was" price shown crossed out */
+  compareAtPrice?: number;
   currency: string;
   description: string;
   sizes: string[];
@@ -203,6 +205,26 @@ export type SiteSettingsDoc = BaseDoc & {
   aboutSections?: string[];
   visionTitle?: string;
   missionTitle?: string;
+  /* ---- shop & checkout ---- */
+  shopCurrency?: string;
+  /** "test" (demo payments allowed, nothing charged) | "live" */
+  paymentMode?: string;
+  payPaystack?: string;
+  payFlutterwave?: string;
+  /** pay with cash / MoMo when collecting or on delivery */
+  payLater?: string;
+  paystackPublicKey?: string;
+  flutterwavePublicKey?: string;
+  shopDelivery?: string;
+  /** "Area|fee" lines */
+  deliveryAreas?: string[];
+  freeDeliveryOver?: number;
+  /** "Place — opening times" lines */
+  collectionPoints?: string[];
+  /** "Size|Age|Chest cm|Length cm" lines */
+  sizeGuide?: string[];
+  shopNotice?: string;
+  shopReturns?: string;
   /** "yes" | "no" */
   commentsOpen: string;
   commentsNote: string;

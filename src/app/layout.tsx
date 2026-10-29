@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/bricolage-grotesque";
 import "@fontsource-variable/nunito-sans";
 import "./globals.css";
+import { CartDrawer } from "@/components/shop/CartDrawer";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteSettingsProvider } from "@/lib/site";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <SiteHeader />
           <main id="main" className="min-h-[70dvh]">{children}</main>
           <SiteFooter />
+          <CartDrawer />
           <MotionDirector />
         </SiteSettingsProvider>
       </body>
