@@ -36,6 +36,8 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const r = el.getBoundingClientRect();
+    if (r.bottom > 0 && r.top < window.innerHeight) return; // already visible: animating it in would blink
     const ctx = gsap.context(() => {
       const items = el.querySelectorAll("[data-stagger]");
       const targets = items.length ? items : [el];

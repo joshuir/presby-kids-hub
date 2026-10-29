@@ -22,7 +22,7 @@ export function SplitWords({ text, className, mark = "squiggle", hero }: { text:
     <span className={className} aria-label={(text || "").replace(/\*/g, "")}>
       {words.map((w, k) => (
         <span key={k} aria-hidden className="inline-block overflow-hidden pb-[0.08em] align-bottom">
-          <span {...attr} className="inline-block pr-[0.24em]">
+          <span {...attr} style={hero ? ({ "--i": k } as React.CSSProperties) : undefined} className="inline-block pr-[0.24em]">
             <span
               className={cn(
                 w.hl && mark === "squiggle" && "text-blueBrand-600",

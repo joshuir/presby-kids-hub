@@ -17,6 +17,9 @@ import { NAV } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 import type { HeroDoc } from "@/lib/cms/types";
 
+/** Stagger index (and optional start tilt) for the CSS hero entrance. */
+const ix = (i: number, r?: number) => ({ "--i": i, ...(r !== undefined ? { "--r": `${r}deg` } : {}) }) as React.CSSProperties;
+
 /** Breadcrumb trail from the menu structure (Home › Section › Page). */
 function useCrumbs(extra?: string) {
   const path = (usePathname() || "/").replace(/\/+$/, "/");
@@ -110,12 +113,8 @@ export function PageHero({
     if (!el) return;
     const level = motionLevel(s.animationLevel);
     if (level === "off") return;
-    const ctx = gsap.context(() => {
-      gsap.from("[data-hw]", { yPercent: 110, opacity: 0, duration: 0.85, ease: "power4.out", stagger: 0.05, delay: 0.05 });
-      gsap.from("[data-ph]", { y: 18, opacity: 0, duration: 0.7, ease: "power3.out", delay: 0.3, stagger: 0.08 });
-      gsap.from("[data-hero-img]", { y: 40, scale: 0.94, opacity: 0, rotate: (i) => [0, -6, 5][i % 3], duration: 1.1, ease: "power3.out", stagger: 0.12, delay: 0.15 });
-      if (style === "photo") gsap.from("[data-hero-bg]", { scale: 1.15, duration: 1.8, ease: "power2.out" });
-    }, el);
+    // Entrance animations are pure CSS (globals.css, "Hero entrances") so they start with the first
+    // paint; running them from JS after hydration hid an already-visible hero and caused a blink.
     // mouse parallax on the photo stack
     const art = artRef.current;
     let off = () => {};
@@ -135,10 +134,7 @@ export function PageHero({
       el.addEventListener("pointermove", move);
       off = () => el.removeEventListener("pointermove", move);
     }
-    return () => {
-      off();
-      ctx.revert();
-    };
+    return () => off();
   }, [t, style, s.animationLevel]);
 
   const Title = (
@@ -148,7 +144,7 @@ export function PageHero({
   );
 
   const Crumbs = crumbs.length ? (
-    <nav aria-label="Breadcrumb" data-ph className={cn("mb-5 flex flex-wrap items-center gap-1 text-sm font-bold", style === "photo" ? "text-white/80" : "text-ink/50")}>
+    <nav aria-label="Breadcrumb" data-ph style={ix(0)} className={cn("mb-5 flex flex-wrap items-center gap-1 text-sm font-bold", style === "photo" ? "text-white/80" : "text-ink/50")}>
       <Link href="/" className="inline-flex items-center gap-1 rounded-full px-1 hover:text-blueBrand-600">
         <Home className="h-3.5 w-3.5" aria-hidden /> Home
       </Link>
@@ -167,7 +163,7 @@ export function PageHero({
 
   const Ctas =
     h.ctaLabel || h.cta2Label ? (
-      <div data-ph className="mt-7 flex flex-wrap gap-3">
+      <div data-ph style={ix(3)} className="mt-7 flex flex-wrap gap-3">
         {h.ctaLabel && h.ctaUrl ? <Cta href={ctaHref(h.ctaUrl, s.whatsapp)} label={h.ctaLabel} primary /> : null}
         {h.cta2Label && h.cta2Url ? <Cta href={ctaHref(h.cta2Url, s.whatsapp)} label={h.cta2Label} /> : null}
       </div>
@@ -182,11 +178,11 @@ export function PageHero({
           <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-ink/85 via-ink/55 to-ink/10" />
           <div className="px-6 pb-12 pt-10 sm:px-12 sm:pb-20 sm:pt-16 lg:min-h-[480px] lg:px-16">
             {Crumbs}
-            {eb ? <div data-ph><Eyebrow tone="white">{eb}</Eyebrow></div> : null}
+            {eb ? <div data-ph style={ix(1)}><Eyebrow tone="white">{eb}</Eyebrow></div> : null}
             <div className="mt-4 max-w-3xl">{Title}</div>
-            {intr ? <p data-ph className="mt-5 max-w-xl text-lg leading-8 text-white/80">{intr}</p> : null}
+            {intr ? <p data-ph style={ix(2)} className="mt-5 max-w-xl text-lg leading-8 text-white/80">{intr}</p> : null}
             {Ctas}
-            {children ? <div data-ph className="mt-6">{children}</div> : null}
+            {children ? <div data-ph style={ix(4)} className="mt-6">{children}</div> : null}
           </div>
         </div>
       </section>
@@ -201,33 +197,33 @@ export function PageHero({
       <Container className={cn("relative grid items-center gap-10 pb-12 pt-8 sm:pb-16 sm:pt-12", style === "collage" && imgs.length > 0 && "lg:grid-cols-[1.15fr_1fr]")}>
         <div>
           {Crumbs}
-          {eb ? <div data-ph><Eyebrow>{eb}</Eyebrow></div> : null}
+          {eb ? <div data-ph style={ix(1)}><Eyebrow>{eb}</Eyebrow></div> : null}
           <div className="mt-4">{Title}</div>
-          {intr ? <p data-ph className="mt-5 max-w-xl text-lg leading-8 text-ink/65">{intr}</p> : null}
+          {intr ? <p data-ph style={ix(2)} className="mt-5 max-w-xl text-lg leading-8 text-ink/65">{intr}</p> : null}
           {Ctas}
-          {children ? <div data-ph className="mt-6">{children}</div> : null}
+          {children ? <div data-ph style={ix(4)} className="mt-6">{children}</div> : null}
         </div>
         {style === "collage" && imgs.length ? (
           <div ref={artRef} className="relative mx-auto aspect-[5/4] w-full max-w-[560px]" aria-hidden>
             <div data-depth="14" className="absolute inset-y-[6%] left-[8%] right-[14%]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img data-hero-img src={sized(imgs[0], 1100, 900)} alt="" className="h-full w-full rounded-[2rem] object-cover shadow-[0_30px_60px_-25px_rgba(11,21,48,.45)]" />
+              <img data-hero-img style={ix(0, 0)} src={sized(imgs[0], 1100, 900)} alt="" className="h-full w-full rounded-[2rem] object-cover shadow-[0_30px_60px_-25px_rgba(11,21,48,.45)]" />
             </div>
             {imgs[1] ? (
               <div data-depth="-22" className="absolute -left-1 bottom-0 w-[34%] sm:-left-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img data-hero-img src={sized(imgs[1], 500, 600)} alt="" className="aspect-[5/6] w-full -rotate-6 rounded-[1.4rem] border-[5px] border-white object-cover shadow-xl" />
+                <img data-hero-img style={ix(1, -6)} src={sized(imgs[1], 500, 600)} alt="" className="aspect-[5/6] w-full -rotate-6 rounded-[1.4rem] border-[5px] border-white object-cover shadow-xl" />
               </div>
             ) : null}
             {imgs[2] ? (
               <div data-depth="26" className="absolute -right-1 top-0 w-[30%] sm:-right-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img data-hero-img src={sized(imgs[2], 500, 600)} alt="" className="aspect-[5/6] w-full rotate-6 rounded-[1.4rem] border-[5px] border-white object-cover shadow-xl" />
+                <img data-hero-img style={ix(2, 5)} src={sized(imgs[2], 500, 600)} alt="" className="aspect-[5/6] w-full rotate-6 rounded-[1.4rem] border-[5px] border-white object-cover shadow-xl" />
               </div>
             ) : null}
             <div data-depth="-12" className="absolute bottom-[8%] right-[6%] grid h-20 w-20 place-items-center rounded-full bg-white shadow-xl ring-4 ring-sun/60 sm:h-24 sm:w-24">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img data-hero-img src="/brand/logo.png" alt="" className="h-[72%] w-auto" />
+              <img data-hero-img style={ix(3, 0)} src="/brand/logo.png" alt="" className="h-[72%] w-auto" />
             </div>
           </div>
         ) : null}

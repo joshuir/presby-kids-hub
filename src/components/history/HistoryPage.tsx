@@ -110,6 +110,8 @@ export function Timeline({ items }: { items: MilestoneDoc[] }) {
     const ctx = gsap.context(() => {
       gsap.fromTo("[data-line]", { scaleY: 0 }, { scaleY: 1, ease: "none", transformOrigin: "top", scrollTrigger: { trigger: el, start: "top 65%", end: "bottom 65%", scrub: true } });
       el.querySelectorAll("li").forEach((li, i) => {
+        const r = li.getBoundingClientRect();
+        if (r.bottom > 0 && r.top < window.innerHeight) return; // already visible: don't hide and re-show it
         const fromX = window.innerWidth >= 768 ? (i % 2 ? 60 : -60) : 30;
         gsap.from(li.querySelector("[data-ms-text]"), { x: fromX, opacity: 0, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: li, start: "top 82%", once: true } });
         gsap.from(li.querySelector("[data-ms-pic]"), { x: -fromX, opacity: 0, scale: 0.94, duration: 1, ease: "power3.out", scrollTrigger: { trigger: li, start: "top 82%", once: true } });

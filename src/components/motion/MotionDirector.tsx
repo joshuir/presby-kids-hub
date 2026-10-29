@@ -7,6 +7,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useSettings } from "@/lib/site";
 
 gsap.registerPlugin(ScrollTrigger);
+// Phones resize the viewport whenever the address bar slides in/out; re-measuring then makes content jump.
+ScrollTrigger.config({ ignoreMobileResize: true });
+// test builds only: lets the browser tests count ScrollTrigger refreshes
+if (process.env.NEXT_PUBLIC_MOTION_PROBE && typeof window !== "undefined") (window as unknown as { __ST: typeof ScrollTrigger }).__ST = ScrollTrigger;
 
 export type MotionLevel = "full" | "reduced" | "off";
 
@@ -58,7 +62,15 @@ export function MotionDirector() {
     const triggers: ScrollTrigger[] = [];
     const cleanups: Array<() => void> = [];
 
+    // Anything the visitor can already see is left alone: hiding it so it can fade back in is the
+    // "blink" people notice on phones while a page (or late-loading CMS content) appears.
+    const onScreen = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return r.bottom > 0 && r.top < window.innerHeight && r.height > 0;
+    };
+
     const reveal = (el: HTMLElement) => {
+      if (onScreen(el)) return;
       const kind = el.dataset.reveal || "up";
       const items = el.querySelectorAll<HTMLElement>(":scope [data-stagger]");
       const targets: Element[] = items.length ? Array.from(items) : [el];
@@ -146,7 +158,7 @@ export function MotionDirector() {
 
     const split = (el: HTMLElement) => {
       const words = el.querySelectorAll("[data-w]");
-      if (!words.length) return;
+      if (!words.length || onScreen(el)) return;
       const tw = gsap.from(words, {
         yPercent: 110, opacity: 0, duration: 0.8, ease: "power4.out", stagger: 0.05,
         scrollTrigger: { trigger: el, start: "top 90%", once: true },
@@ -164,15 +176,18 @@ export function MotionDirector() {
       if (tw.scrollTrigger) triggers.push(tw.scrollTrigger);
     };
 
+    const SELECTOR = "[data-reveal],[data-count],[data-split],[data-parallax],[data-scrub-words],[data-magnetic],[data-tilt]";
+    /** Wires any animation attributes not yet wired; returns how many new elements were set up. */
     const setup = () => {
+      let added = 0;
       const each = (sel: string, fn: (el: HTMLElement) => void) =>
         document.querySelectorAll<HTMLElement>(sel).forEach((el) => {
-          const key = `${sel}`;
           const marks = (el as unknown as { __m?: Set<string> }).__m ?? new Set<string>();
-          if (seen.has(el) && marks.has(key)) return;
+          if (seen.has(el) && marks.has(sel)) return;
           seen.add(el);
-          marks.add(key);
+          marks.add(sel);
           (el as unknown as { __m?: Set<string> }).__m = marks;
+          added++;
           fn(el);
         });
       each("[data-reveal]", reveal);
@@ -186,19 +201,31 @@ export function MotionDirector() {
           each("[data-tilt]", tilt);
         }
       }
+      return added;
     };
 
-    let raf = 0;
+    // Only react when content that carries animation attributes arrives (e.g. CMS data loading in).
+    // ScrollTrigger itself, count-ups, rotating photos and marquees also change the DOM; reacting to
+    // those caused a refresh → mutation → refresh loop that made the page flicker on phones.
+    const relevant = (muts: MutationRecord[]) =>
+      muts.some((m) =>
+        Array.from(m.addedNodes).some(
+          (n) => n instanceof HTMLElement && (n.matches(SELECTOR) || !!n.querySelector(SELECTOR)),
+        ),
+      );
+    let timer = 0;
     const schedule = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        setup();
-        ScrollTrigger.refresh();
-      });
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        if (setup() > 0) ScrollTrigger.refresh();
+      }, 120);
     };
     setup();
-    const mo = new MutationObserver(schedule);
+    const mo = new MutationObserver((muts) => {
+      if (relevant(muts)) schedule();
+    });
     mo.observe(document.body, { childList: true, subtree: true });
+    // late-loading images change heights; one refresh once the page has settled
     const t = window.setTimeout(() => ScrollTrigger.refresh(), 900);
 
     // reading-progress bar
@@ -209,7 +236,7 @@ export function MotionDirector() {
 
     return () => {
       mo.disconnect();
-      cancelAnimationFrame(raf);
+      window.clearTimeout(timer);
       window.clearTimeout(t);
       prog?.kill();
       triggers.forEach((tr) => tr.kill());
