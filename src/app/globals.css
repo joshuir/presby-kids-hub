@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: "Nunito";
+  --font-ui: "Poppins";
+  --font-heading: "Baloo 2";
+  --background: #FFFFFF;
+  --foreground: #0B1430;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+
+  --color-ink-950: #0B1430;
+  --color-navy-900: #0A1F44;
+  --color-navy-800: #12306B;
+  --color-sky-soft: #EEF5FF;
+  --color-sun-400: #FFC83D;
+
+  --color-blueBrand-50: #EFF6FF;
+  --color-blueBrand-100: #DBEAFE;
+  --color-blueBrand-200: #BFDBFE;
+  --color-blueBrand-300: #93C5FD;
+  --color-blueBrand-400: #60A5FA;
+  --color-blueBrand-500: #3B82F6;
+  --color-blueBrand-600: #2563EB;
+  --color-blueBrand-700: #1D4ED8;
+  --color-blueBrand-800: #1E40AF;
+  --color-blueBrand-900: #1E3A8A;
+
+  --radius-2xl: 1.25rem;
+  --radius-4xl: 2rem;
+
+  --shadow-soft: 0 10px 30px rgba(2, 6, 23, 0.08);
+  --shadow-card: 0 12px 32px rgba(2, 6, 23, 0.10);
+
+  --background-image-hero-gradient: radial-gradient(1200px circle at 20% 0%, rgba(134,255,153,0.30), transparent 40%), radial-gradient(1000px circle at 90% 10%, rgba(0,221,255,0.20), transparent 45%), linear-gradient(180deg, #F8F8F8 0%, #FFFFFF 55%, #F8F8F8 100%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.focus-ring {
+  @apply outline-none;
+}
+.focus-ring:focus-visible {
+  @apply ring-2 ring-blueBrand-400/60 ring-offset-2 ring-offset-white;
+}
+
+
+/* ---------- Kids Hub design system ---------- */
+.bg-hero-blue {
+  background:
+    radial-gradient(900px circle at 85% -10%, rgba(96, 165, 250, 0.45), transparent 55%),
+    radial-gradient(700px circle at -10% 30%, rgba(37, 99, 235, 0.35), transparent 55%),
+    linear-gradient(160deg, #0A1F44 0%, #12306B 45%, #1D4ED8 100%);
+}
+.bg-soft-blue {
+  background: linear-gradient(180deg, #EEF5FF 0%, #FFFFFF 100%);
+}
+.text-balance { text-wrap: balance; }
+.prose-kids p { margin: 0.9em 0; line-height: 1.8; }
+.prose-kids h2 { font-family: var(--font-heading); font-size: 1.6rem; margin-top: 1.6em; line-height: 1.2; }
+.prose-kids ul { list-style: disc; padding-left: 1.4em; margin: 0.8em 0; }
+.prose-kids li { margin: 0.35em 0; }
+.prose-kids strong { color: #0A1F44; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
