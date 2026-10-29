@@ -79,7 +79,7 @@ export function Hero() {
           <p data-h className="mt-6 max-w-lg text-lg leading-8 text-ink/65">{s.heroSubtitle}</p>
           <div data-h className="mt-7 flex flex-wrap gap-3">
             <Link href="/classes/" className="btn btn-primary" data-magnetic>Explore Our Classes <ArrowRight className="h-4 w-4" aria-hidden /></Link>
-            <Link href="/about/team/" className="btn btn-ghost" data-magnetic>Meet Our Teachers <Users className="h-4 w-4" aria-hidden /></Link>
+            <Link href="/about/#team" className="btn btn-ghost" data-magnetic>Meet Our Teachers <Users className="h-4 w-4" aria-hidden /></Link>
           </div>
           <ul data-h className="mt-7 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
             {s.serviceTimes.map(parts).map(([a, b]) => (

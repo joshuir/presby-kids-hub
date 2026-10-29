@@ -1,47 +1,59 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, Eye, Heart, Sparkles, Star, Sun } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Eye, Heart, Sparkles, Star, Sun } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
-import { Reveal, SectionHeading } from "@/components/ui/Reveal";
+import { Reveal } from "@/components/ui/Reveal";
 import { TeamRoster } from "@/components/blocks/TeamRoster";
 import { AppPromo } from "@/components/blocks/AppPromo";
-import { HistoryDownload } from "@/components/history/HistoryPage";
+import { HistorySection } from "@/components/history/HistoryPage";
 import { parts, useSettings } from "@/lib/site";
-import { useContent } from "@/lib/useContent";
-import { sized } from "@/lib/img";
 
-function HistoryTeaser() {
-  const s = useSettings();
-  const ms = (useContent("milestones") ?? []).filter((m) => (m.kind || "milestone") === "milestone").sort((a, b) => a.year.localeCompare(b.year));
-  const pick = [ms[0], ms[Math.floor(ms.length / 2)], ms[ms.length - 1]].filter((m, i, a) => m && a.indexOf(m) === i);
+const SECTIONS = [
+  ["about-us", "Vision & mission"],
+  ["team", "Our team"],
+  ["history", "History"],
+  ["achievements", "Achievements"],
+] as const;
+
+/** Sticky jump-links for the merged About page; highlights the section in view. */
+function SectionNav() {
+  const [active, setActive] = useState<string>(SECTIONS[0][0]);
+  const bar = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const ul = bar.current;
+    const a = ul?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (ul && a && ul.scrollWidth > ul.clientWidth) ul.scrollTo({ left: a.offsetLeft - (ul.clientWidth - a.offsetWidth) / 2, behavior: "smooth" });
+  }, [active]);
+  useEffect(() => {
+    const els = SECTIONS.map(([id]) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+    const io = new IntersectionObserver(
+      (entries) => {
+        const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (vis) setActive(vis.target.id);
+      },
+      { rootMargin: "-30% 0px -60% 0px" },
+    );
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, []);
   return (
-    <section id="history" className="scroll-mt-28">
-      <Container className="mt-28">
-        <SectionHeading eyebrow="Our history" title={s.historyTitle} intro={s.historyIntro} tone="sun" action={{ href: "/about/history/", label: "Full timeline" }} />
-        <ul data-reveal className="mt-8 grid gap-4 md:grid-cols-3">
-          {pick.map((m) => (
-            <li key={m!.id} data-stagger>
-              <Link href="/about/history/" className="group card block overflow-hidden">
-                {m!.image ? (
-                  <div className="zoom-img aspect-[16/10]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={sized(m!.image, 700, 440)} alt="" loading="lazy" className="h-full w-full object-cover" />
-                  </div>
-                ) : null}
-                <div className="p-5">
-                  <div className="font-display text-4xl font-extrabold text-blueBrand-600">{m!.year}</div>
-                  <h3 className="mt-1 font-display text-xl font-bold">{m!.title}</h3>
-                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-ink/60">{m!.description}</p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-8 flex justify-center"><HistoryDownload /></div>
-      </Container>
-    </section>
+    <nav aria-label="On this page" className="print-skip sticky top-[84px] z-30 mt-8 flex justify-center px-4">
+      <ul ref={bar} className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-full border border-ink/10 bg-white/85 p-1.5 shadow-[0_8px_30px_-12px_rgba(15,23,42,.25)] backdrop-blur">
+        {SECTIONS.map(([id, label]) => (
+          <li key={id} className="shrink-0">
+            <a
+              href={`#${id}`}
+              aria-current={active === id ? "true" : undefined}
+              className={`block rounded-full px-4 py-2 text-sm font-bold transition ${active === id ? "bg-ink text-white" : "text-ink/65 hover:bg-ink/5 hover:text-ink"}`}
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
@@ -49,7 +61,7 @@ export function AboutPage() {
   const s = useSettings();
   return (
     <div>
-      <PageHero page="about" eyebrow="About us" title={s.aboutTitle} intro={s.aboutSubtitle}>
+      <div className="print-skip"><PageHero page="about" eyebrow="About us" title={s.aboutTitle} intro={s.aboutSubtitle}>
         <ul className="flex flex-wrap gap-2">
           {[
             ["Love", Heart, "bg-[#FFE8E1] text-[#C2410C]"],
@@ -65,9 +77,12 @@ export function AboutPage() {
             );
           })}
         </ul>
-      </PageHero>
+      </PageHero></div>
 
-      <Container className="mt-6">
+      <SectionNav />
+
+      <section id="about-us" className="print-skip scroll-mt-28">
+      <Container className="mt-10">
         <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
           <Reveal className="relative overflow-hidden rounded-[2rem] bg-ink p-7 text-white sm:p-10" >
             <Eye className="h-10 w-10 text-sun" aria-hidden />
@@ -91,19 +106,17 @@ export function AboutPage() {
           </div>
         </div>
       </Container>
+      </section>
 
-      <section id="teachers" className="scroll-mt-28">
+      <section id="team" className="print-skip scroll-mt-28">
         <Container className="mt-28">
-          <TeamRoster limit={5} filter={false} />
-          <div className="mt-10 flex justify-center">
-            <Link href="/about/team/" className="btn btn-dark" data-magnetic>Meet the whole team <ArrowRight className="h-4 w-4" aria-hidden /></Link>
-          </div>
+          <TeamRoster />
         </Container>
       </section>
 
-      <HistoryTeaser />
+      <HistorySection />
 
-      <AppPromo />
+      <div className="print-skip"><AppPromo /></div>
     </div>
   );
 }

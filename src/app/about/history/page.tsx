@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { HistoryPage } from "@/components/history/HistoryPage";
+import { MovedTo } from "@/components/site/MovedTo";
 
-export const metadata: Metadata = {
-  title: "History & achievements",
-  description: "How the Presbyterian Children's Ministry grew from twelve children in 2006 — milestones, photos, achievements and our full history to download.",
-};
+export const metadata: Metadata = { title: "History & achievements", robots: { index: false }, alternates: { canonical: "/about/#history" } };
 
 export default function Page() {
-  return <HistoryPage />;
+  return <MovedTo path="/about/" hash="history" label="History & achievements on the About page" />;
 }

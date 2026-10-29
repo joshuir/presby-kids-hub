@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { TeamPage } from "@/components/pages/TeamPage";
+import { MovedTo } from "@/components/site/MovedTo";
 
-export const metadata: Metadata = {
-  title: "Our team",
-  description: "Meet the background-checked, safeguarding-trained teachers who lead every Children's Ministry class.",
-};
+export const metadata: Metadata = { title: "Our team", robots: { index: false }, alternates: { canonical: "/about/#team" } };
 
 export default function Page() {
-  return <TeamPage />;
+  return <MovedTo path="/about/" hash="team" label="Our team on the About page" />;
 }

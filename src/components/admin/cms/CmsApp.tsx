@@ -290,10 +290,10 @@ export function CmsApp() {
     if (tab === "posts") return `/blog/#${d.id}`;
     if (tab === "events") return `/events/#${d.id}`;
     if (tab === "gallery") return `/gallery/?album=${d.id}`;
-    if (tab === "teachers") return `/about/team/?teacher=${d.id}`;
-    if (tab === "milestones") return "/about/history/";
+    if (tab === "teachers") return `/about/?teacher=${d.id}#team`;
+    if (tab === "milestones") return "/about/#history";
     if (tab === "heroes") {
-      const map: Record<string, string> = { about: "/about/", team: "/about/team/", history: "/about/history/", classes: "/classes/", events: "/events/", blog: "/blog/", gallery: "/gallery/", contact: "/contact/", games: "/games/", collection: "/collection/", safeguarding: "/safeguarding/", accessibility: "/accessibility/", privacy: "/privacy/", terms: "/terms/" };
+      const map: Record<string, string> = { about: "/about/", team: "/about/#team", history: "/about/#history", classes: "/classes/", events: "/events/", blog: "/blog/", gallery: "/gallery/", contact: "/contact/", games: "/games/", collection: "/collection/", safeguarding: "/safeguarding/", accessibility: "/accessibility/", privacy: "/privacy/", terms: "/terms/" };
       return map[String(d.id)] ?? "/";
     }
     if (tab === "faqs") return "/contact/";

@@ -383,7 +383,7 @@ const H = (id: string, page: string, eyebrow: string, title: string, intro: stri
 
 /** One hero per page — edit the words, photos and buttons in the CMS under Website → Page heroes. */
 export const seedHeroes: HeroDoc[] = [
-  H("about", "About us", "About us", "Small hands, *big faith*.", "Helping children in Accra discover the Bible since 2006 — with trained teachers, joyful worship and a classroom for every age.", ["groupClose", "girlSmile", "boyGrin"], ["Meet the team", "/about/#teachers"], ["Our history", "/about/history/"]),
+  H("about", "About us", "About us", "Small hands, *big faith*.", "Helping children in Accra discover the Bible since 2006 — with trained teachers, joyful worship and a classroom for every age.", ["groupClose", "girlSmile", "boyGrin"], ["Meet the team", "/about/#team"], ["Our history", "/about/#history"]),
   H("team", "Our team", "Our teachers", "Meet the team behind the *classes*.", "Every teacher is a church member, background-checked and safeguarding-trained — and they love your children.", ["classroom", "kidsSmiling"], ["Contact a teacher", "/contact/"], null, "photo"),
   H("history", "History", "Since 2006", "Our *history* & achievements.", "From twelve children in a borrowed vestry to nine bright classrooms — the story of God's faithfulness to our children.", ["window", "boysBrown", "girlUniform"], ["Download our history", "#history-pdf"]),
   H("classes", "Classes", "Classes", "A classroom for *every age*.", "Nine classes from age 3 to 13 — each with its own room, teachers and weekly Bible lesson.", ["classroom", "toddler", "boysGreen"], ["Find your child's class", "#beginners"]),

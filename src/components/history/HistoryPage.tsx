@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Award, Download, FileText, Printer } from "lucide-react";
 import { Container } from "@/components/site/Container";
-import { PageHero } from "@/components/site/PageHero";
 import { SplitWords } from "@/components/motion/SplitWords";
 import { motionLevel } from "@/components/motion/MotionDirector";
 import { downloadUrl } from "@/lib/cms/client";
@@ -19,6 +17,14 @@ import { cn } from "@/lib/cn";
 gsap.registerPlugin(ScrollTrigger);
 
 /** Dark "download our full history" pill (reference screenshot 3). Falls back to a print-to-PDF version of this page. */
+function printHistory() {
+  const el = document.documentElement;
+  el.dataset.print = "history";
+  const done = () => { delete el.dataset.print; window.removeEventListener("afterprint", done); };
+  window.addEventListener("afterprint", done);
+  window.print();
+}
+
 export function HistoryDownload({ className }: { className?: string }) {
   const s = useSettings();
   const file = s.historyPdf;
@@ -41,7 +47,7 @@ export function HistoryDownload({ className }: { className?: string }) {
   return file ? (
     <a id="history-pdf" href={downloadUrl(file)} className={cls} data-magnetic>{inner}</a>
   ) : (
-    <button id="history-pdf" type="button" onClick={() => window.print()} className={cls} data-magnetic aria-label="Download our full history (opens print — choose Save as PDF)">{inner}</button>
+    <button id="history-pdf" type="button" onClick={printHistory} className={cls} data-magnetic aria-label="Download our full history (opens print — choose Save as PDF)">{inner}</button>
   );
 }
 
@@ -146,32 +152,34 @@ export function Achievements({ items, title }: { items: MilestoneDoc[]; title: s
   );
 }
 
-export function HistoryPage() {
+/** Timeline, download and achievements — shown as a section of the About page. */
+export function HistorySection() {
   const s = useSettings();
   const all = useContent("milestones");
   const timeline = (all ?? []).filter((m) => (m.kind || "milestone") === "milestone").sort((a, b) => a.year.localeCompare(b.year) || a.order - b.order);
   const wins = (all ?? []).filter((m) => m.kind === "achievement");
   return (
     <div className="print-history overflow-x-clip">
-      <PageHero page="history" eyebrow="Since 2006" title="Our *history* & achievements" />
-      <Container className="mt-6">
-        <div className="flex flex-col items-center text-center">
-          <h2 className="font-display text-4xl font-extrabold leading-[1.02] sm:text-6xl">
-            <SplitWords text={s.historyTitle || "Twenty years of growing faith"} mark="none" />
-          </h2>
-          {s.historyIntro ? <p data-reveal className="mt-4 max-w-2xl text-lg leading-8 text-ink/65">{s.historyIntro}</p> : null}
-          <HistoryDownload className="mt-8" />
-        </div>
-      </Container>
-      <Container className="mt-20 max-w-6xl">
-        {all ? <Timeline items={timeline} /> : <div className="h-96 animate-pulse rounded-[2rem] bg-white/60" />}
-      </Container>
-      <Container className="mt-28">
-        <Achievements items={wins} title={s.achievementsTitle || "Achievements we give thanks for"} />
-        <div className="no-print mt-12 flex justify-center">
-          <Link href="/about/team/" className="btn btn-ghost">Meet the people behind the story</Link>
-        </div>
-      </Container>
+      <section id="history" className="scroll-mt-28">
+        <Container className="mt-28">
+          <div className="flex flex-col items-center text-center">
+            <p className="eyebrow">Since 2006</p>
+            <h2 className="mt-3 font-display text-4xl font-extrabold leading-[1.02] sm:text-6xl">
+              <SplitWords text={s.historyTitle || "Twenty years of growing faith"} mark="none" />
+            </h2>
+            {s.historyIntro ? <p data-reveal className="mt-4 max-w-2xl text-lg leading-8 text-ink/65">{s.historyIntro}</p> : null}
+            <HistoryDownload className="mt-8" />
+          </div>
+        </Container>
+        <Container className="mt-20 max-w-6xl">
+          {all ? <Timeline items={timeline} /> : <div className="h-96 animate-pulse rounded-[2rem] bg-white/60" />}
+        </Container>
+      </section>
+      <section id="achievements" className="scroll-mt-28">
+        <Container className="mt-28">
+          <Achievements items={wins} title={s.achievementsTitle || "Achievements we give thanks for"} />
+        </Container>
+      </section>
     </div>
   );
 }

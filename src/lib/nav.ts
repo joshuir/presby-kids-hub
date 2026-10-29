@@ -26,9 +26,9 @@ export const NAV: NavItem[] = [
     label: "About",
     icon: Info,
     children: [
-      { href: "/about/", label: "About us", description: "Our vision, mission and what we believe", icon: Info },
-      { href: "/about/team/", label: "Our team", description: "Meet the teachers behind every class", icon: Users },
-      { href: "/about/history/", label: "History & achievements", description: "Twenty years of growing faith", icon: History },
+      { href: "/about/#about-us", label: "Vision & mission", description: "Our vision, mission and what we believe", icon: Info },
+      { href: "/about/#team", label: "Our team", description: "Meet the teachers behind every class", icon: Users },
+      { href: "/about/#history", label: "History & achievements", description: "Twenty years of growing faith", icon: History },
     ],
   },
   { key: "classes", href: "/classes/", label: "Classes", icon: GraduationCap, mega: "classes" },

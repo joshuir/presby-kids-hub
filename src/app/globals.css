@@ -152,3 +152,8 @@ html[data-motion="off"] .marquee { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* "Download our history" on the About page prints only the history section. */
+@media print {
+  html[data-print="history"] .print-skip { display: none !important; }
+}

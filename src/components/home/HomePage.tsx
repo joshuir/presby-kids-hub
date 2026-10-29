@@ -278,7 +278,7 @@ export function HomePage() {
 
       {/* teachers */}
       <Container className="mt-24">
-        <SectionHeading eyebrow="Our teachers" title="Caring people, trained and checked" intro="Every child known by name." action={{ href: "/about/team/", label: `See all ${teachers.length} teachers` }} tone="mint" />
+        <SectionHeading eyebrow="Our teachers" title="Caring people, trained and checked" intro="Every child known by name." action={{ href: "/about/#team", label: `See all ${teachers.length} teachers` }} tone="mint" />
         <div className="mt-4"><TeamRoster heading={false} filter={false} limit={5} /></div>
       </Container>
 

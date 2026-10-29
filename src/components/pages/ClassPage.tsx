@@ -97,7 +97,7 @@ export function ClassPage() {
           <h2 className="font-display text-3xl font-extrabold">{team.length > 1 ? "Your teachers" : "Your teacher"}</h2>
           <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
             {team.map((t, i) => (
-              <Link key={t.id} href={`/about/team/?teacher=${t.id}`} className="card flex items-center gap-4 p-4 transition hover:-translate-y-0.5">
+              <Link key={t.id} href={`/about/?teacher=${t.id}#team`} className="card flex items-center gap-4 p-4 transition hover:-translate-y-0.5">
                 <Avatar t={t} size={64} i={i} />
                 <div>
                   <div className="font-display text-xl font-bold">{t.name}</div>
