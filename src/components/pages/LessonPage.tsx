@@ -1,5 +1,7 @@
 "use client";
 
+import { VerseChallenge } from "@/components/games/VerseChallenge";
+import { Buddy } from "@/components/games/Mascot";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Download, FileText, HandHeart, Image as ImageIcon, Music, Printer, Sparkles } from "lucide-react";
@@ -72,6 +74,8 @@ export function LessonPage() {
           <blockquote className="mt-2 font-display text-3xl font-extrabold leading-tight sm:text-4xl">“{l.memoryVerse}”</blockquote>
           <p className="mt-2 font-bold text-white/75">{l.memoryRef}</p>
         </figure>
+
+        {l.memoryVerse ? <VerseChallenge verse={l.memoryVerse} reference={l.memoryRef} /> : null}
 
         {l.introVideoUrl ? <div className="no-print mt-8"><VideoEmbed url={l.introVideoUrl} title={`${l.title} — intro`} /></div> : null}
 
@@ -201,9 +205,12 @@ export function LessonPage() {
           ) : null}
         </nav>
         <div className="no-print mt-6 rounded-[1.6rem] bg-[#58CC02] p-5 text-white sm:flex sm:items-center sm:justify-between">
-          <div>
+          <div className="flex items-center gap-3">
+            <Buddy kind="lion" color="#F59E0B" mood="wave" size={64} look={false} />
+            <div>
             <div className="font-display text-xl font-extrabold">Practise with the Bible games</div>
             <div className="text-white/85">Earn XP on stories like this one.</div>
+            </div>
           </div>
           <Link href="/games/" className="btn mt-3 bg-white text-[#46A302] sm:mt-0">Play now</Link>
         </div>

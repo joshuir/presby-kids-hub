@@ -223,3 +223,67 @@ export async function deleteMedia(key: string) {
   const { error } = await supa().storage.from("media").remove([key]);
   if (error) throw new Error(errMsg(error));
 }
+
+// ---------------- reactions & comments ----------------
+
+export const REACTIONS = ["❤️", "🙏", "🙌", "😂", "😮", "👏", "🔥", "😊"] as const;
+export type Reaction = (typeof REACTIONS)[number];
+export type CommentItem = { id: number; name: string; body: string; reply?: string | null; replyBy?: string | null; createdAt: string };
+
+let reactionsP: Promise<Record<string, Record<string, number>>> | null = null;
+/** Live reaction totals for every post (one request, shared). */
+export function getReactionTotals(fresh = false) {
+  if (!reactionsP || fresh) {
+    reactionsP = rpc<Record<string, Record<string, number>>>("cm_reactions").catch(() => {
+      reactionsP = null;
+      return {};
+    });
+  }
+  return reactionsP;
+}
+
+export async function react(postId: string, emoji: Reaction, delta: 1 | -1) {
+  return rpc<number>("cm_react", { pid: postId, emoji, delta });
+}
+
+let countsP: Promise<Record<string, number>> | null = null;
+export function getCommentCounts(fresh = false) {
+  if (!countsP || fresh) {
+    countsP = rpc<Record<string, number>>("cm_comment_counts").catch(() => {
+      countsP = null;
+      return {};
+    });
+  }
+  return countsP;
+}
+
+export function getComments(postId: string) {
+  return rpc<CommentItem[]>("cm_comments", { pid: postId });
+}
+
+/** A per-browser random id used only for rate-limiting comments. */
+export function clientId() {
+  const k = "cm-client-id";
+  try {
+    let v = localStorage.getItem(k);
+    if (!v) {
+      v = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem(k, v);
+    }
+    return v;
+  } catch {
+    return "anon-" + Math.random().toString(36).slice(2, 12);
+  }
+}
+
+export function addComment(postId: string, name: string, body: string) {
+  return rpc<string>("cm_comment_add", { pid: postId, nm: name, txt: body, cid: clientId() });
+}
+
+export type AdminComment = CommentItem & { postId: string; status: "pending" | "approved" | "rejected"; flagged: boolean; flagReason?: string | null };
+export const adminComments = () => rpc<AdminComment[]>("cm_admin_comments");
+export const adminSetComment = (id: number, status: AdminComment["status"], reply: string, remove = false) =>
+  rpc("cm_admin_comment_set", { cid: id, st: status, rep: reply, remove });
+
+/** Public calendar feed (Google / Apple / Outlook subscribe to this and refresh automatically). */
+export const CALENDAR_FEED = `${SUPABASE_URL}/functions/v1/cm-calendar`;

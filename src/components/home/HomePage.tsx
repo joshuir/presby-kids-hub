@@ -1,18 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useMemo, useState } from "react";
 import { ArrowRight, BookHeart, Gamepad2, HandHeart, Music, Quote, Shirt, ShieldCheck, Sparkles } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { Reveal, SectionHeading, Eyebrow } from "@/components/ui/Reveal";
-import { GroupArt, SingingArt } from "@/components/art/Illustrations";
+import { GroupArt } from "@/components/art/Illustrations";
+import { Buddy } from "@/components/games/Mascot";
+import { GalleryRail } from "@/components/gallery/GalleryRail";
+import { TeamRoster } from "@/components/blocks/TeamRoster";
+import { PhotoWall } from "./PhotoWall";
+import { KIDS, kid, sized } from "@/lib/img";
 import { MonthCalendar } from "@/components/blocks/MonthCalendar";
 import { EventCard } from "@/components/blocks/EventCard";
 import { PostCard } from "@/components/blocks/PostCard";
-import { AlbumCard } from "@/components/blocks/AlbumCard";
-import { Teachers } from "@/components/blocks/Teachers";
 import { AppPromo } from "@/components/blocks/AppPromo";
 import { Socials } from "@/components/blocks/Socials";
 import { Faqs } from "@/components/blocks/Faqs";
@@ -23,40 +24,16 @@ import { parts, useSettings } from "@/lib/site";
 import { useContent } from "@/lib/useContent";
 import { classLessons } from "@/lib/format";
 
-gsap.registerPlugin(ScrollTrigger);
 
 const STEP_ICONS = [Music, BookHeart, Sparkles, ShieldCheck];
 const STEP_TONES = ["bg-sky-soft text-blueBrand-700", "bg-sun-soft text-[#9A6400]", "bg-[#FFE8E1] text-[#C2410C]", "bg-[#DCFCE7] text-[#15803D]"];
 
 function Stats() {
   const s = useSettings();
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const ctx = gsap.context(() => {
-      el.querySelectorAll<HTMLElement>("[data-count]").forEach((n) => {
-        const raw = n.dataset.count ?? "";
-        const num = parseFloat(raw);
-        if (isNaN(num) || num >= 1900) return; // leave years as-is
-        const suffix = raw.replace(/^[\d.]+/, "");
-        ScrollTrigger.create({
-          trigger: el,
-          start: "top 88%",
-          once: true,
-          onEnter: () => {
-            const o = { v: 0 };
-            gsap.to(o, { v: num, duration: 1.5, ease: "power2.out", onUpdate: () => { n.textContent = Math.round(o.v) + suffix; } });
-          },
-        });
-      });
-    }, el);
-    return () => ctx.revert();
-  }, [s.stats]);
   return (
-    <div ref={ref} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div data-reveal className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {s.stats.map(parts).map(([label, value], i) => (
-        <div key={label} className={`rounded-[1.6rem] p-5 ${["bg-sky-soft", "bg-sun-soft", "bg-[#FFE8E1]", "bg-[#DCFCE7]"][i % 4]}`}>
+        <div key={label} data-stagger data-tilt="6" className={`rounded-[1.6rem] p-5 ${["bg-sky-soft", "bg-sun-soft", "bg-[#FFE8E1]", "bg-[#DCFCE7]"][i % 4]}`}>
           <div data-count={value} className="font-display text-4xl font-extrabold sm:text-5xl">{value}</div>
           <div className="mt-1 text-sm font-bold text-ink/60">{label}</div>
         </div>
@@ -65,12 +42,25 @@ function Stats() {
   );
 }
 
+const GROUP_PHOTOS: Record<string, keyof typeof KIDS> = { beginners: "toddler", primary: "girlSmile", juniors: "boysGreen", seniors: "fiveBoys" };
+
+/** The child's mascot peeks at the cursor on the games card. */
+function GamesBuddy() {
+  const [hover, setHover] = useState(false);
+  return (
+    <span onPointerEnter={() => setHover(true)} onPointerLeave={() => setHover(false)} className="block">
+      <Buddy kind="lion" color="#F59E0B" mood={hover ? "cheer" : "wave"} size={120} />
+    </span>
+  );
+}
+
 export function HomePage() {
   const s = useSettings();
   const classes = useContent("classes") ?? [];
   const lessons = useContent("lessons") ?? [];
   const events = useContent("events") ?? [];
-  const posts = useContent("posts") ?? [];
+  const postsRaw = useContent("posts");
+  const posts = useMemo(() => postsRaw ?? [], [postsRaw]);
   const teachers = useContent("teachers") ?? [];
   const gallery = useContent("gallery") ?? [];
   const products = useContent("products") ?? [];
@@ -84,17 +74,18 @@ export function HomePage() {
   const featured = lessons.find((l) => l.id === s.featuredLessonId) ?? classLessons(lessons, classes[0]?.id ?? "").current;
   const featuredClass = classes.find((c) => c.id === featured?.classId);
   const feed = useMemo(() => [...posts].sort((a, b) => (b.pinned === "yes" ? 1 : 0) - (a.pinned === "yes" ? 1 : 0) || b.date.localeCompare(a.date)).slice(0, 3), [posts]);
-  const albums = gallery.filter((g) => g.featured === "yes").slice(0, 4);
+  const albums = gallery.filter((g) => g.featured === "yes");
   const product = products[0];
 
   return (
     <div>
       <Hero />
+      <PhotoWall />
 
       {/* welcome + stats */}
       <Container className="mt-4">
         <div className="grid gap-4 lg:grid-cols-[1.1fr_1.4fr]">
-          <Reveal className="card relative overflow-hidden p-6 sm:p-8">
+          <Reveal className="card relative overflow-hidden p-6 sm:p-8" >
             <Quote className="h-10 w-10 text-sun" aria-hidden />
             <h2 className="mt-3 font-display text-3xl font-extrabold">{s.welcomeTitle}</h2>
             <p className="mt-3 text-lg leading-8 text-ink/70">{s.welcomeText}</p>
@@ -115,12 +106,20 @@ export function HomePage() {
       <Container className="mt-24">
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <Reveal>
-            {s.sundayImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={s.sundayImage} alt="" className="aspect-[42/34] w-full rounded-[2.2rem] object-cover" />
-            ) : (
-              <SingingArt className="w-full" />
-            )}
+            <div className="relative mx-auto aspect-[42/36] w-full max-w-xl">
+              <div className="absolute inset-y-0 left-0 right-[16%] overflow-hidden rounded-[2.2rem] shadow-card">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img data-parallax="0.12" src={s.sundayImage ? sized(s.sundayImage, 1100, 900) : kid("classroom", 1100, 900)} alt="Children worshipping together on a Sunday" className="h-[118%] w-full object-cover" />
+              </div>
+              <div data-parallax="-0.35" className="absolute -bottom-6 right-0 w-[40%] overflow-hidden rounded-[1.6rem] border-[6px] border-cream shadow-xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={kid("girlLaugh", 500, 600)} alt="" className="aspect-[5/6] w-full object-cover" />
+              </div>
+              <div data-parallax="-0.6" className="absolute -left-3 top-6 rounded-2xl bg-white px-4 py-3 shadow-xl">
+                <div className="text-xs font-extrabold uppercase tracking-wider text-blueBrand-600">Every Sunday</div>
+                <div className="font-display text-lg font-extrabold">9:00 – 10:45 am</div>
+              </div>
+            </div>
           </Reveal>
           <div>
             <SectionHeading eyebrow="Our children's service" title={s.sundayTitle} intro={s.sundayIntro} tone="sun" />
@@ -128,7 +127,7 @@ export function HomePage() {
               {s.sundaySteps.map(parts).map(([t, d], i) => {
                 const Icon = STEP_ICONS[i % 4];
                 return (
-                  <div key={t} data-stagger className="card p-4">
+                  <div key={t} data-stagger data-tilt="6" className="card p-4">
                     <span className={`grid h-10 w-10 place-items-center rounded-xl ${STEP_TONES[i % 4]}`}><Icon className="h-5 w-5" aria-hidden /></span>
                     <div className="mt-3 font-display text-lg font-bold">{t}</div>
                     <p className="mt-1 text-sm leading-6 text-ink/60">{d}</p>
@@ -136,7 +135,7 @@ export function HomePage() {
                 );
               })}
             </Reveal>
-            <Link href="/about/" className="btn btn-ghost mt-6">More about us <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+            <Link href="/about/" className="btn btn-ghost mt-6" data-magnetic>More about us <ArrowRight className="h-4 w-4" aria-hidden /></Link>
           </div>
         </div>
       </Container>
@@ -145,10 +144,17 @@ export function HomePage() {
       <Container className="mt-24">
         <SectionHeading eyebrow="Classes" title="A class for every age" intro="Four groups. Nine classes. One Bible story each week." action={{ href: "/classes/", label: "All classes" }} />
         <Reveal watch={classes.length} className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {s.groups.map(parts).map(([key, label, ages, desc]) => (
-            <Link key={key} data-stagger href={`/classes/#${key}`} className="group card overflow-hidden transition hover:-translate-y-1.5">
+          {s.groups.map(parts).map(([key, label, ages, desc, photo]) => (
+            <Link key={key} data-stagger data-tilt="5" href={`/classes/#${key}`} className="group card overflow-hidden">
               <div className="relative">
-                <GroupArt group={key} className="aspect-[16/9] w-full" />
+                {photo || GROUP_PHOTOS[key] ? (
+                  <div className="zoom-img aspect-[16/11]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo ? sized(photo, 600, 420) : kid(GROUP_PHOTOS[key], 600, 420)} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  </div>
+                ) : (
+                  <GroupArt group={key} className="aspect-[16/9] w-full" />
+                )}
                 <span className="eyebrow absolute left-3 top-3 bg-white/90 text-ink">{ages}</span>
               </div>
               <div className="p-5">
@@ -192,13 +198,17 @@ export function HomePage() {
                 <p className="mt-2 text-lg font-semibold text-white/80">{featured.bibleRef} · {featured.topic}</p>
                 <p className="mt-3 max-w-lg text-white/75">Every class explores this passage on Sunday. Keep the conversation going at home.</p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link href={`/classes/lesson/?c=${featured.classId}&l=${featured.slug}`} className="btn btn-sun">Read the lesson</Link>
+                  <Link href={`/classes/lesson/?c=${featured.classId}&l=${featured.slug}`} className="btn btn-sun" data-magnetic>Read the lesson</Link>
                   <Link href="/classes/" className="btn bg-white/15 text-white ring-1 ring-white/30">Choose your child&apos;s class</Link>
                 </div>
               </div>
               <figure className="rounded-[1.6rem] bg-white p-6 text-ink shadow-card">
                 <figcaption className="text-xs font-extrabold uppercase tracking-wider text-blueBrand-600">Memory verse</figcaption>
-                <blockquote className="mt-2 font-display text-3xl font-extrabold leading-tight">“{featured.memoryVerse}”</blockquote>
+                <blockquote data-scrub-words className="mt-2 font-display text-3xl font-extrabold leading-tight">
+                  {`“${featured.memoryVerse}”`.split(" ").map((w, i) => (
+                    <span key={i} data-w className="inline-block pr-[0.22em]">{w}</span>
+                  ))}
+                </blockquote>
                 <p className="mt-3 text-sm font-bold text-ink/55">{featured.memoryRef}{featuredClass ? ` · ${featuredClass.name} version` : ""}</p>
               </figure>
             </div>
@@ -210,14 +220,14 @@ export function HomePage() {
       <Container className="mt-24">
         <SectionHeading eyebrow="Kids Zone" title="Play, learn and wear your faith" intro="Bible games that grow with your child, and a clothing collection you can try in every colour." tone="mint" />
         <Reveal className="mt-8 grid gap-4 lg:grid-cols-2">
-          <Link data-stagger href="/games/" className="group relative overflow-hidden rounded-[2rem] bg-[#58CC02] p-6 text-white shadow-[0_6px_0_#46A302] transition hover:-translate-y-1 sm:p-8">
+          <Link data-stagger data-tilt="4" href="/games/" className="group relative overflow-hidden rounded-[2rem] bg-[#58CC02] p-6 text-white shadow-[0_6px_0_#46A302] sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <span className="eyebrow bg-white/20 text-white"><Gamepad2 className="h-3.5 w-3.5" aria-hidden /> Bible Games</span>
                 <h3 className="mt-3 font-display text-3xl font-extrabold sm:text-4xl">Climb the Bible path</h3>
                 <p className="mt-2 max-w-sm text-white/85">{units.length || 6} story units, four levels each, streaks, badges and a mascot who cheers you on.</p>
               </div>
-              <span className="text-6xl transition group-hover:-rotate-12 group-hover:scale-110" aria-hidden>🦁</span>
+              <span className="-mr-2 -mt-4 shrink-0" aria-hidden><GamesBuddy /></span>
             </div>
             <div className="mt-6 flex flex-wrap gap-2" aria-hidden>
               {units.slice(0, 6).map((u) => (
@@ -226,7 +236,7 @@ export function HomePage() {
             </div>
             <span className="btn mt-6 bg-white text-[#46A302]">Start playing <ArrowRight className="h-4 w-4" aria-hidden /></span>
           </Link>
-          <Link data-stagger href="/collection/" className="group relative overflow-hidden rounded-[2rem] bg-[#EEEDE8] p-6 transition hover:-translate-y-1 sm:p-8">
+          <Link data-stagger data-tilt="4" href="/collection/" className="group relative overflow-hidden rounded-[2rem] bg-[#EEEDE8] p-6 sm:p-8">
             <div className="grid items-center gap-4 sm:grid-cols-[1fr_190px]">
               <div>
                 <span className="eyebrow bg-white text-ink"><Shirt className="h-3.5 w-3.5" aria-hidden /> Clothing Collection</span>
@@ -256,22 +266,20 @@ export function HomePage() {
         </Reveal>
       </Container>
 
-      {/* gallery */}
-      <Container className="mt-24">
-        <SectionHeading eyebrow="Gallery" title="Moments worth remembering" action={{ href: "/gallery/", label: "View gallery" }} tone="sun" />
-        <Reveal watch={albums.length} className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {albums.map((a, i) => (
-            <Link key={a.id} data-stagger href={`/gallery/?album=${a.id}`}>
-              <AlbumCard a={a} i={i} />
-            </Link>
-          ))}
-        </Reveal>
-      </Container>
+      {/* gallery — auto-moving rail */}
+      <div className="mt-28">
+        <Container>
+          <SectionHeading eyebrow="Gallery" title="Moments worth remembering" action={{ href: "/gallery/", label: "View gallery" }} tone="sun" />
+        </Container>
+        <div className="mt-8">
+          <GalleryRail albums={albums.length ? albums : gallery} title="Gallery" speed={50} links={[{ href: "/gallery/", label: "All albums" }, { href: "/events/", label: "Upcoming events" }]} />
+        </div>
+      </div>
 
       {/* teachers */}
       <Container className="mt-24">
-        <SectionHeading eyebrow="Our teachers" title="Caring people, trained and checked" intro="Every child known by name." action={{ href: "/about/#teachers", label: `See all ${teachers.length} teachers` }} tone="mint" />
-        <div className="mt-8"><Teachers limit={5} /></div>
+        <SectionHeading eyebrow="Our teachers" title="Caring people, trained and checked" intro="Every child known by name." action={{ href: "/about/team/", label: `See all ${teachers.length} teachers` }} tone="mint" />
+        <div className="mt-4"><TeamRoster heading={false} filter={false} limit={5} /></div>
       </Container>
 
       <AppPromo />
@@ -284,7 +292,7 @@ export function HomePage() {
 
       {/* faqs */}
       <Container className="mt-24">
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.6fr]">
+        <div className="grid gap-8 [&>*]:min-w-0 lg:grid-cols-[1fr_1.6fr]">
           <div>
             <SectionHeading eyebrow="FAQs" title="Questions parents ask" intro="Still wondering about something? Send us a message — a real person will reply." />
             <HandHeart className="mt-8 hidden h-24 w-24 text-blueBrand-200 lg:block" aria-hidden />

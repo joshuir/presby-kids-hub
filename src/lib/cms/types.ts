@@ -16,11 +16,12 @@ export type CollectionName =
   | "events"
   | "gallery"
   | "faqs"
-  | "milestones";
+  | "milestones"
+  | "heroes";
 
 export const COLLECTIONS: CollectionName[] = [
   "classes", "lessons", "questions", "units", "mascots", "products", "leaderboard",
-  "settings", "teachers", "posts", "events", "gallery", "faqs", "milestones",
+  "settings", "teachers", "posts", "events", "gallery", "faqs", "milestones", "heroes",
 ];
 
 export type BaseDoc = {
@@ -103,12 +104,26 @@ export type UnitDoc = BaseDoc & {
   status: Status;
 };
 
+export type MascotKind = "lamb" | "lion" | "owl" | "bear" | "dove" | "fox";
+
 export type MascotDoc = BaseDoc & {
   name: string;
+  /** which character rig to draw */
+  kind: MascotKind;
   emoji: string;
   color: string;
+  /** belly / cheeks / details */
+  accent: string;
   unlockXp: number;
   description: string;
+  /** what the mascot says when cheering */
+  catchphrase: string;
+  /** optional uploaded artwork per mood (PNG/SVG/GIF/WebP); the drawn character is used when empty */
+  imageIdle: string;
+  imageHappy: string;
+  imageSad: string;
+  imageCheer: string;
+  imageThink: string;
   status: Status;
 };
 
@@ -134,6 +149,12 @@ export type ProductDoc = BaseDoc & {
   colorways: Colorway[];
   frontImage?: string; // optional real photo of a white/light garment (tinted live)
   backImage?: string;
+  /** extra product / lifestyle photos shown in the product gallery */
+  photos?: string[];
+  /** "New" | "Bestseller" | "Limited" | "" */
+  badge?: string;
+  material?: string;
+  care?: string;
   order: number;
   status: Status;
 };
@@ -156,6 +177,19 @@ export type SiteSettingsDoc = BaseDoc & {
   churchName: string;
   footerBlurb: string;
   ctaLabel: string;
+  footerTagline: string;
+  footerLinks: string[]; // "Label|/url"
+  /** full | reduced | off */
+  animationLevel: string;
+  /** seconds per gallery rotation step */
+  galleryRotateSeconds: number;
+  /** "yes" | "no" */
+  commentsOpen: string;
+  commentsNote: string;
+  historyIntro: string;
+  achievementsTitle: string;
+  teamTitle: string;
+  teamIntro: string;
   heroBadge: string;
   heroTitle: string; // use *word* to highlight
   heroWords: string[]; // rotating words
@@ -210,6 +244,8 @@ export type TeacherDoc = BaseDoc & {
   bio: string;
   highlights: string[];
   photo: string;
+  /** a short quote shown with the portrait */
+  quote: string;
   order: number;
   status: Status;
 };
@@ -241,6 +277,9 @@ export type EventDoc = BaseDoc & {
   location: string;
   description: string;
   image: string;
+  /** small round logo/badge for the calendar (falls back to the image) */
+  logo: string;
+  color: string;
   category: string; // "Special days" | "Family" | …
   registerUrl: string;
   status: Status;
@@ -268,11 +307,33 @@ export type FaqDoc = BaseDoc & {
 };
 
 export type MilestoneDoc = BaseDoc & {
+  /** "milestone" (timeline) or "achievement" (highlights grid) */
+  kind: string;
   year: string;
   title: string;
   description: string;
   image: string;
+  images: string[];
+  /** e.g. "1,200+" for achievements */
+  stat: string;
   order: number;
+  status: Status;
+};
+
+/** Hero banner for a page — id is the page key (home, about, classes, events, blog, gallery, contact, games, collection, history, team…). */
+export type HeroDoc = BaseDoc & {
+  page: string;
+  eyebrow: string;
+  title: string; // use *word* to highlight
+  intro: string;
+  image: string;
+  images: string[];
+  ctaLabel: string;
+  ctaUrl: string;
+  cta2Label: string;
+  cta2Url: string;
+  /** "collage" | "photo" | "plain" */
+  style: string;
   status: Status;
 };
 
@@ -302,7 +363,9 @@ export type DocFor<C extends CollectionName> = C extends "classes"
                         ? FaqDoc
                         : C extends "milestones"
                           ? MilestoneDoc
-                          : LeaderboardDoc;
+                          : C extends "heroes"
+                            ? HeroDoc
+                            : LeaderboardDoc;
 /** Content is live when published, or scheduled with a publish time in the past. */
 export function isLive(doc: { status?: Status; publishAt?: string }, now = Date.now()) {
   if (doc.status === "published") return true;

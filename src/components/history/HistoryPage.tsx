@@ -1,133 +1,177 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { AnimatePresence, motion } from "framer-motion";
+import { Award, Download, FileText, Printer } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
-import { SectionHeading } from "@/components/ui/Reveal";
-import { RichText } from "@/components/ui/RichText";
-import { downloadUrl, getPublic } from "@/lib/cms/client";
+import { SplitWords } from "@/components/motion/SplitWords";
+import { motionLevel } from "@/components/motion/MotionDirector";
+import { downloadUrl } from "@/lib/cms/client";
 import { useSettings } from "@/lib/site";
-import type { ConstitutionDoc, MilestoneDoc } from "@/lib/cms/types";
+import { useContent } from "@/lib/useContent";
+import { sized } from "@/lib/img";
+import type { MilestoneDoc } from "@/lib/cms/types";
 import { cn } from "@/lib/cn";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export function HistoryPage() {
+/** Dark "download our full history" pill (reference screenshot 3). Falls back to a print-to-PDF version of this page. */
+export function HistoryDownload({ className }: { className?: string }) {
   const s = useSettings();
-  const [milestones, setMilestones] = useState<MilestoneDoc[]>([]);
-  const [sections, setSections] = useState<ConstitutionDoc[]>([]);
-  const [open, setOpen] = useState<string | null>(null);
-  const lineRef = useRef<HTMLDivElement>(null);
+  const file = s.historyPdf;
+  const ext = (file?.split("?")[0].split(".").pop() || "pdf").toUpperCase();
+  const inner = (
+    <>
+      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sun text-ink">
+        <FileText className="h-7 w-7" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block font-display text-lg font-extrabold sm:text-xl">Download our full history</span>
+        <span className="block text-sm text-white/65">{file ? `${ext} · the story since 2006` : "Printable PDF · the story since 2006"}</span>
+      </span>
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-ink transition group-hover:scale-110">
+        {file ? <Download className="h-5 w-5" aria-hidden /> : <Printer className="h-5 w-5" aria-hidden />}
+      </span>
+    </>
+  );
+  const cls = cn("group no-print flex w-full max-w-xl items-center gap-4 rounded-[1.8rem] bg-ink p-3 pr-4 text-white shadow-[0_24px_50px_-20px_rgba(11,21,48,.6)] transition hover:-translate-y-0.5", className);
+  return file ? (
+    <a id="history-pdf" href={downloadUrl(file)} className={cls} data-magnetic>{inner}</a>
+  ) : (
+    <button id="history-pdf" type="button" onClick={() => window.print()} className={cls} data-magnetic aria-label="Download our full history (opens print — choose Save as PDF)">{inner}</button>
+  );
+}
 
-  useEffect(() => {
-    getPublic("milestones").then((m) => setMilestones(m.sort((a, b) => a.order - b.order))).catch(() => {});
-    getPublic("constitution").then((c) => {
-      const sorted = c.sort((a, b) => a.order - b.order);
-      setSections(sorted);
-      setOpen(sorted[0]?.id ?? null);
-    }).catch(() => {});
-  }, []);
+function MilestoneRow({ m, i }: { m: MilestoneDoc; i: number }) {
+  const left = i % 2 === 0;
+  const photo = m.image;
+  const extras = (m.images ?? []).slice(0, 3);
+  const text = (
+    <div data-ms-text className={cn("pb-2", left ? "md:text-right" : "")}>
+      <div className="font-display text-5xl font-extrabold leading-none tracking-tight text-blueBrand-600 sm:text-6xl">{m.year}</div>
+      <h3 className="mt-3 font-display text-2xl font-extrabold sm:text-[1.7rem]">{m.title}</h3>
+      <p className="mt-3 text-[17px] leading-8 text-ink/65">{m.description}</p>
+      {extras.length ? (
+        <div className={cn("mt-4 flex gap-2", left && "md:justify-end")}>
+          {extras.map((u) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={u} src={sized(u, 180, 180)} alt="" loading="lazy" className="h-16 w-16 rounded-xl object-cover ring-4 ring-white sm:h-20 sm:w-20" />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+  const pic = photo ? (
+    <div data-ms-pic className="zoom-img overflow-hidden rounded-[1.8rem] bg-paper shadow-[0_24px_50px_-28px_rgba(11,21,48,.5)]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={sized(photo, 900, 640)} alt={m.title} loading="lazy" className="aspect-[16/11] w-full object-cover" />
+    </div>
+  ) : (
+    <div data-ms-pic className="hidden md:block" />
+  );
+  return (
+    <li className="relative grid gap-6 pl-16 md:grid-cols-2 md:gap-20 md:pl-0">
+      <span
+        aria-hidden
+        className="absolute left-0 top-1 z-10 grid h-12 w-12 place-items-center rounded-full bg-ink font-display text-sm font-extrabold text-white ring-[6px] ring-cream md:left-1/2 md:h-14 md:w-14 md:-translate-x-1/2"
+      >
+        {m.year.slice(2)}’
+      </span>
+      {left ? (
+        <>
+          {text}
+          {pic}
+        </>
+      ) : (
+        <>
+          <div className="order-2 md:order-1">{pic}</div>
+          <div className="order-1 md:order-2">{text}</div>
+        </>
+      )}
+    </li>
+  );
+}
 
-  // timeline line draws as you scroll; items slide in from alternating sides
+export function Timeline({ items }: { items: MilestoneDoc[] }) {
+  const ref = useRef<HTMLOListElement>(null);
+  const s = useSettings();
   useEffect(() => {
-    const el = lineRef.current;
-    if (!el || !milestones.length || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const el = ref.current;
+    if (!el || !items.length || motionLevel(s.animationLevel) === "off") return;
     const ctx = gsap.context(() => {
-      gsap.fromTo("[data-line]", { scaleY: 0 }, { scaleY: 1, ease: "none", transformOrigin: "top", scrollTrigger: { trigger: el, start: "top 70%", end: "bottom 60%", scrub: true } });
-      el.querySelectorAll<HTMLElement>("[data-ms]").forEach((item, i) => {
-        gsap.from(item, { x: i % 2 ? 40 : -40, opacity: 0, duration: 0.7, ease: "power3.out", scrollTrigger: { trigger: item, start: "top 85%", once: true } });
-        gsap.from(item.querySelector("[data-dot]"), { scale: 0, duration: 0.5, ease: "back.out(3)", scrollTrigger: { trigger: item, start: "top 80%", once: true } });
+      gsap.fromTo("[data-line]", { scaleY: 0 }, { scaleY: 1, ease: "none", transformOrigin: "top", scrollTrigger: { trigger: el, start: "top 65%", end: "bottom 65%", scrub: true } });
+      el.querySelectorAll("li").forEach((li, i) => {
+        const fromX = window.innerWidth >= 768 ? (i % 2 ? 60 : -60) : 30;
+        gsap.from(li.querySelector("[data-ms-text]"), { x: fromX, opacity: 0, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: li, start: "top 82%", once: true } });
+        gsap.from(li.querySelector("[data-ms-pic]"), { x: -fromX, opacity: 0, scale: 0.94, duration: 1, ease: "power3.out", scrollTrigger: { trigger: li, start: "top 82%", once: true } });
+        gsap.from(li.querySelector("span"), { scale: 0, duration: 0.6, ease: "back.out(2)", scrollTrigger: { trigger: li, start: "top 82%", once: true } });
       });
     }, el);
     return () => ctx.revert();
-  }, [milestones]);
-
-  const printConstitution = () => {
-    const w = window.open("", "_blank");
-    if (!w) return;
-    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    w.document.write(`<!doctype html><title>Constitution — ${esc(s.siteName)}</title><style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.7;color:#111}h1{font-size:28px}h2{font-size:19px;margin-top:28px}</style><h1>${esc(s.siteName)} — Constitution</h1><p>${esc(s.churchName)}</p>${sections.map((c, i) => `<h2>${i + 1}. ${esc(c.title)}</h2><p>${esc(c.body).replace(/\n\n/g, "</p><p>")}</p>`).join("")}<script>print()</script>`);
-    w.document.close();
-  };
-
+  }, [items.length, s.animationLevel]);
   return (
-    <div>
-      <PageHero eyebrow="Governance & transparency" title="History & Constitution" intro="How our ministry began, how it has grown, and the rules that guide how we care for every child.">
-        <div className="flex flex-wrap gap-2">
-          <a href="#history" className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-navy-900">Our history</a>
-          <a href="#constitution" className="rounded-full px-5 py-2.5 text-sm font-bold ring-1 ring-white/40">Constitution</a>
-          {s.constitutionPdf ? (
-            <a href={downloadUrl(s.constitutionPdf)} className="rounded-full px-5 py-2.5 text-sm font-bold ring-1 ring-white/40">Download PDF ↓</a>
-          ) : (
-            <button type="button" onClick={printConstitution} className="rounded-full px-5 py-2.5 text-sm font-bold ring-1 ring-white/40">Save as PDF ↓</button>
-          )}
+    <ol ref={ref} className="relative grid gap-16 md:gap-24">
+      <span aria-hidden className="absolute bottom-0 left-[22px] top-2 w-[3px] rounded-full bg-ink/10 md:left-1/2 md:-translate-x-1/2" />
+      <span aria-hidden data-line className="absolute bottom-0 left-[22px] top-2 w-[3px] rounded-full bg-blueBrand-600 md:left-1/2 md:-translate-x-1/2" />
+      {items.map((m, i) => (
+        <MilestoneRow key={m.id} m={m} i={i} />
+      ))}
+    </ol>
+  );
+}
+
+export function Achievements({ items, title }: { items: MilestoneDoc[]; title: string }) {
+  if (!items.length) return null;
+  const tones = ["bg-sky-soft", "bg-sun-soft", "bg-[#FFE8E1]", "bg-[#DCFCE7]", "bg-[#EDE9FE]", "bg-white"];
+  return (
+    <section aria-labelledby="ach-title">
+      <h2 id="ach-title" className="text-center font-display text-4xl font-extrabold sm:text-6xl">
+        <SplitWords text={title} />
+      </h2>
+      <ul data-reveal className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((a, i) => (
+          <li key={a.id} data-stagger data-tilt="5" className={cn("relative overflow-hidden rounded-[1.8rem] p-6 sm:p-7", tones[i % tones.length], tones[i % tones.length] === "bg-white" && "ring-1 ring-ink/5")}>
+            <Award className="absolute right-5 top-5 h-7 w-7 text-ink/15" aria-hidden />
+            {a.stat ? <div data-count={a.stat} className="font-display text-5xl font-extrabold tracking-tight sm:text-6xl">{a.stat}</div> : null}
+            <h3 className="mt-2 font-display text-xl font-extrabold">{a.title}</h3>
+            <p className="mt-2 leading-7 text-ink/65">{a.description}</p>
+            {a.year ? <span className="mt-3 inline-block rounded-full bg-ink px-3 py-1 text-xs font-bold text-white">{a.year}</span> : null}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function HistoryPage() {
+  const s = useSettings();
+  const all = useContent("milestones");
+  const timeline = (all ?? []).filter((m) => (m.kind || "milestone") === "milestone").sort((a, b) => a.year.localeCompare(b.year) || a.order - b.order);
+  const wins = (all ?? []).filter((m) => m.kind === "achievement");
+  return (
+    <div className="print-history overflow-x-clip">
+      <PageHero page="history" eyebrow="Since 2006" title="Our *history* & achievements" />
+      <Container className="mt-6">
+        <div className="flex flex-col items-center text-center">
+          <h2 className="font-display text-4xl font-extrabold leading-[1.02] sm:text-6xl">
+            <SplitWords text={s.historyTitle || "Twenty years of growing faith"} mark="none" />
+          </h2>
+          {s.historyIntro ? <p data-reveal className="mt-4 max-w-2xl text-lg leading-8 text-ink/65">{s.historyIntro}</p> : null}
+          <HistoryDownload className="mt-8" />
         </div>
-      </PageHero>
-
-      {/* timeline */}
-      <section id="history" className="scroll-mt-24 py-20">
-        <Container>
-          <SectionHeading eyebrow="Our story" title="Ministry history" intro={s.historyIntro} center />
-          <div ref={lineRef} className="relative mx-auto mt-14 max-w-4xl">
-            <div className="absolute bottom-0 left-5 top-0 w-1 rounded-full bg-blueBrand-100 md:left-1/2 md:-translate-x-1/2" />
-            <div data-line className="absolute bottom-0 left-5 top-0 w-1 rounded-full bg-gradient-to-b from-blueBrand-400 to-navy-800 md:left-1/2 md:-translate-x-1/2" />
-            <ol className="grid gap-10">
-              {milestones.map((m, i) => (
-                <li key={m.id} data-ms className={cn("relative grid pl-14 md:grid-cols-2 md:pl-0", i % 2 === 1 && "md:[&>div]:col-start-2")}>
-                  <span data-dot className="absolute left-5 top-6 z-10 grid h-6 w-6 -translate-x-1/2 place-items-center rounded-full bg-white ring-4 ring-blueBrand-500 md:left-1/2" />
-                  <div className={cn("rounded-3xl bg-white p-6 shadow-card ring-1 ring-black/5", i % 2 ? "md:ml-10" : "md:mr-10")}>
-                    <div className="font-[family-name:var(--font-heading)] text-3xl text-blueBrand-600">{m.year}</div>
-                    <div className="mt-1 font-[family-name:var(--font-heading)] text-xl text-navy-900">{m.title}</div>
-                    <p className="mt-2 text-sm leading-6 text-black/65">{m.description}</p>
-                    {m.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={m.image} alt="" loading="lazy" className="mt-4 aspect-video w-full rounded-2xl object-cover" />
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </Container>
-      </section>
-
-      {/* constitution */}
-      <section id="constitution" className="bg-soft-blue scroll-mt-24 py-20">
-        <Container className="max-w-4xl">
-          <SectionHeading eyebrow="Governance" title="Constitution of the children’s ministry" intro="Tap a section to read it in full." />
-          <div className="mt-8 grid gap-3">
-            {sections.map((c, i) => {
-              const isOpen = open === c.id;
-              return (
-                <div key={c.id} className="overflow-hidden rounded-3xl bg-white shadow-soft ring-1 ring-black/5">
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    onClick={() => setOpen(isOpen ? null : c.id)}
-                    className="flex w-full items-center gap-4 px-6 py-5 text-left"
-                  >
-                    <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl text-sm font-extrabold", isOpen ? "bg-blueBrand-600 text-white" : "bg-sky-soft text-blueBrand-700")}>{i + 1}</span>
-                    <span className="flex-1 font-[family-name:var(--font-heading)] text-lg text-navy-900">{c.title}</span>
-                    <motion.span animate={{ rotate: isOpen ? 45 : 0 }} className="text-2xl text-blueBrand-600" aria-hidden>+</motion.span>
-                  </button>
-                  <AnimatePresence initial={false}>
-                    {isOpen ? (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}>
-                        <div className="px-6 pb-6 pl-[4.75rem] text-black/75">
-                          <RichText text={c.body} />
-                        </div>
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </div>
-        </Container>
-      </section>
+      </Container>
+      <Container className="mt-20 max-w-6xl">
+        {all ? <Timeline items={timeline} /> : <div className="h-96 animate-pulse rounded-[2rem] bg-white/60" />}
+      </Container>
+      <Container className="mt-28">
+        <Achievements items={wins} title={s.achievementsTitle || "Achievements we give thanks for"} />
+        <div className="no-print mt-12 flex justify-center">
+          <Link href="/about/team/" className="btn btn-ghost">Meet the people behind the story</Link>
+        </div>
+      </Container>
     </div>
   );
 }

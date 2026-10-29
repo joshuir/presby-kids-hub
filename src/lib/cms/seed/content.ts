@@ -1,5 +1,7 @@
+import { kid, unsplash, PORTRAITS, KIDS } from "../../img";
 import type {
   ClassDoc,
+  HeroDoc,
   EventDoc,
   FaqDoc,
   GalleryDoc,
@@ -22,6 +24,16 @@ export const seedSettings: SiteSettingsDoc[] = [
     footerBlurb:
       "The children's ministry of Presbyterian Church, Accra — Bible-centred Sunday classes for ages 3 to 13, led by trained, safeguarding-checked teachers.",
     ctaLabel: "Join Our Service",
+    footerTagline: "Helping children know, love and live God's Word.",
+    footerLinks: ["Classes|/classes/", "Events|/events/", "Gallery|/gallery/", "Bible Games|/games/", "Clothing|/collection/", "Contact|/contact/"],
+    animationLevel: "full",
+    galleryRotateSeconds: 4,
+    commentsOpen: "yes",
+    commentsNote: "Comments are read by a ministry admin before they appear. Please don't share children's full names, schools or contact details.",
+    historyIntro: "From twelve children in a borrowed vestry to nine classrooms of curious, joyful learners — here is how God has grown our children's ministry.",
+    achievementsTitle: "Achievements we give thanks for",
+    teamTitle: "Meet the team behind the classes",
+    teamIntro: "Every teacher is a church member, background-checked and safeguarding-trained — and they love your children.",
     heroBadge: "Sundays · 9:00 am · Ages 3–13",
     heroTitle: "Helping Children",
     heroWords: ["Know", "Love", "Live"],
@@ -155,14 +167,14 @@ We may update these terms; the latest version will always be on this page.`,
 ];
 
 export const seedTeachers: TeacherDoc[] = [
-  { id: "abena-owusu", name: "Abena Owusu", role: "Children's Ministry Director", team: "leadership", classIds: [], since: "2014", bio: "Abena leads the ministry, trains our teachers and loves seeing children fall in love with God's Word.", highlights: ["Serving since 2014", "Ministry leadership", "Safeguarding trained & checked"], photo: "", order: 1, status: "published" },
-  { id: "kwame-mensah", name: "Kwame Mensah", role: "Senior Class Teacher", team: "seniors", classIds: ["seniors-1", "seniors-2"], since: "2016", bio: "Kwame helps Seniors ask honest questions and build a faith ready for secondary school.", highlights: ["Serving since 2016", "Seniors 1 & 2", "Safeguarding trained & checked"], photo: "", order: 2, status: "published" },
-  { id: "esi-boateng", name: "Esi Boateng", role: "Beginners Lead Teacher", team: "beginners", classIds: ["beginners-1", "beginners-2"], since: "2015", bio: "Esi brings stories to life with songs, puppets and plenty of hugs.", highlights: ["Serving since 2015", "Beginners 1 & 2", "Safeguarding trained & checked"], photo: "", order: 3, status: "published" },
-  { id: "daniel-asante", name: "Daniel Asante", role: "Primary Class Teacher", team: "primary", classIds: ["primary-1", "primary-2"], since: "2018", bio: "Daniel turns memory verses into songs — guitar always in hand.", highlights: ["Serving since 2018", "Primary 1 & 2", "Safeguarding trained & checked"], photo: "", order: 4, status: "published" },
-  { id: "grace-adjei", name: "Grace Adjei", role: "Primary Class Teacher", team: "primary", classIds: ["primary-3"], since: "2019", bio: "Grace helps Primary 3 find their way around their own Bibles.", highlights: ["Serving since 2019", "Primary 3", "Safeguarding trained & checked"], photo: "", order: 5, status: "published" },
-  { id: "samuel-ofori", name: "Samuel Ofori", role: "Juniors Class Teacher", team: "juniors", classIds: ["juniors-1", "juniors-2"], since: "2017", bio: "Samuel leads Bible detective work and a service project every term.", highlights: ["Serving since 2017", "Juniors 1 & 2", "Safeguarding trained & checked"], photo: "", order: 6, status: "published" },
-  { id: "akosua-darko", name: "Akosua Darko", role: "Beginners Assistant", team: "beginners", classIds: ["beginners-2"], since: "2021", bio: "Akosua makes sure every little one feels at home from the first minute.", highlights: ["Serving since 2021", "Beginners 2", "Safeguarding trained & checked"], photo: "", order: 7, status: "published" },
-  { id: "yaw-amponsah", name: "Yaw Amponsah", role: "Safeguarding Lead", team: "leadership", classIds: ["juniors-2"], since: "2016", bio: "Yaw oversees check-in, vetting and training so every child is safe.", highlights: ["Serving since 2016", "Safeguarding lead", "Safeguarding trained & checked"], photo: "", order: 8, status: "published" },
+  { id: "abena-owusu", name: "Abena Owusu", role: "Children's Ministry Director", team: "leadership", classIds: [], since: "2014", bio: "Abena leads the ministry, trains our teachers and loves seeing children fall in love with God's Word.", highlights: ["Serving since 2014", "Ministry leadership", "Safeguarding trained & checked"], photo: unsplash(PORTRAITS["abena-owusu"], 900, 1125, true), quote: "Every child should leave on Sunday knowing God loves them by name.", order: 1, status: "published" },
+  { id: "kwame-mensah", name: "Kwame Mensah", role: "Senior Class Teacher", team: "seniors", classIds: ["seniors-1", "seniors-2"], since: "2016", bio: "Kwame helps Seniors ask honest questions and build a faith ready for secondary school.", highlights: ["Serving since 2016", "Seniors 1 & 2", "Safeguarding trained & checked"], photo: unsplash(PORTRAITS["kwame-mensah"], 900, 1125, true), quote: "No question is too big to bring to the Bible.", order: 2, status: "published" },
+  { id: "esi-boateng", name: "Esi Boateng", role: "Beginners Lead Teacher", team: "beginners", classIds: ["beginners-1", "beginners-2"], since: "2015", bio: "Esi brings stories to life with songs, puppets and plenty of hugs.", highlights: ["Serving since 2015", "Beginners 1 & 2", "Safeguarding trained & checked"], photo: unsplash(PORTRAITS["esi-boateng"], 900, 1125, true), quote: "Little hearts learn best through songs, stories and hugs.", order: 3, status: "published" },
+  { id: "daniel-asante", name: "Daniel Asante", role: "Primary Class Teacher", team: "primary", classIds: ["primary-1", "primary-2"], since: "2018", bio: "Daniel turns memory verses into songs — guitar always in hand.", highlights: ["Serving since 2018", "Primary 1 & 2", "Safeguarding trained & checked"], photo: unsplash(PORTRAITS["daniel-asante"], 900, 1125, true), quote: "If you can sing it, you can remember it.", order: 4, status: "published" },
+  { id: "grace-adjei", name: "Grace Adjei", role: "Primary Class Teacher", team: "primary", classIds: ["primary-3"], since: "2019", bio: "Grace helps Primary 3 find their way around their own Bibles.", highlights: ["Serving since 2019", "Primary 3", "Safeguarding trained & checked"], photo: unsplash(PORTRAITS["grace-adjei"], 900, 1125, true), quote: "I love the moment a child finds a verse all by themselves.", order: 5, status: "published" },
+  { id: "samuel-ofori", name: "Samuel Ofori", role: "Juniors Class Teacher", team: "juniors", classIds: ["juniors-1", "juniors-2"], since: "2017", bio: "Samuel leads Bible detective work and a service project every term.", highlights: ["Serving since 2017", "Juniors 1 & 2", "Safeguarding trained & checked"], photo: unsplash(PORTRAITS["samuel-ofori"], 900, 1125, true), quote: "Faith grows when we put it to work.", order: 6, status: "published" },
+  { id: "akosua-darko", name: "Akosua Darko", role: "Beginners Assistant", team: "beginners", classIds: ["beginners-2"], since: "2021", bio: "Akosua makes sure every little one feels at home from the first minute.", highlights: ["Serving since 2021", "Beginners 2", "Safeguarding trained & checked"], photo: unsplash(PORTRAITS["akosua-darko"], 900, 1125, true), quote: "A warm welcome is the first lesson.", order: 7, status: "published" },
+  { id: "yaw-amponsah", name: "Yaw Amponsah", role: "Safeguarding Lead", team: "leadership", classIds: ["juniors-2"], since: "2016", bio: "Yaw oversees check-in, vetting and training so every child is safe.", highlights: ["Serving since 2016", "Safeguarding lead", "Safeguarding trained & checked"], photo: unsplash(PORTRAITS["yaw-amponsah"], 900, 1125, true), quote: "Safe children are free to learn and play.", order: 8, status: "published" },
 ];
 
 const C = (id: string, group: ClassDoc["group"], number: number, name: string, ageRange: string, room: string, teacherIds: string[], color: string, order: number, description: string): ClassDoc => ({
@@ -276,11 +288,11 @@ export const seedLessons: LessonDoc[] = seedClasses.flatMap((c) =>
 );
 
 export const seedEvents: EventDoc[] = [
-  { id: "children-harvest-2026", title: "Children's Harvest Thanksgiving", date: "2026-10-25", startTime: "09:00", endTime: "11:00", location: "Main Auditorium", description: "Children lead worship, recite memory verses and bring gifts for our partner schools. Families warmly invited.", image: "", category: "Special days", registerUrl: "", status: "published" },
-  { id: "family-games-night", title: "Bible Club Family Games Night", date: "2026-11-18", startTime: "17:30", endTime: "19:00", location: "Children's Wing", description: "Bring the whole family for Bible quiz games, snacks and a short devotion.", image: "", category: "Family", registerUrl: "", status: "published" },
-  { id: "nativity-2026", title: "Children's Nativity & Carols", date: "2026-12-20", startTime: "09:00", endTime: "10:45", location: "Main Auditorium", description: "Every class takes part in the Christmas story — costumes, carols and a few surprises.", image: "", category: "Special days", registerUrl: "", status: "published" },
-  { id: "camp-2027", title: "Children's Ministry Camp", date: "2027-04-09", startTime: "08:00", endTime: "17:00", location: "Aburi Retreat Centre", description: "Three days of Bible teaching, games, nature walks and campfire worship for Juniors and Seniors.", image: "", category: "Camp", registerUrl: "", status: "published" },
-  { id: "parents-day-2027", title: "Parents' Day", date: "2027-05-16", startTime: "09:00", endTime: "11:00", location: "Children's Wing", description: "Sit in on your child's class, meet the teachers and see what they've been learning.", image: "", category: "Family", registerUrl: "", status: "published" },
+  { id: "children-harvest-2026", title: "Children's Harvest Thanksgiving", date: "2026-10-25", startTime: "09:00", endTime: "11:00", location: "Main Auditorium", description: "Children lead worship, recite memory verses and bring gifts for our partner schools. Families warmly invited.", image: kid("boysExcited", 1200, 800), logo: "", color: "#F59E0B", category: "Special days", registerUrl: "", status: "published" },
+  { id: "family-games-night", title: "Bible Club Family Games Night", date: "2026-11-18", startTime: "17:30", endTime: "19:00", location: "Children's Wing", description: "Bring the whole family for Bible quiz games, snacks and a short devotion.", image: kid("kidsSmiling", 1200, 800), logo: "", color: "#8B5CF6", category: "Family", registerUrl: "", status: "published" },
+  { id: "nativity-2026", title: "Children's Nativity & Carols", date: "2026-12-20", startTime: "09:00", endTime: "10:45", location: "Main Auditorium", description: "Every class takes part in the Christmas story — costumes, carols and a few surprises.", image: kid("girlCross", 1200, 800), logo: "", color: "#EF4444", category: "Special days", registerUrl: "", status: "published" },
+  { id: "camp-2027", title: "Children's Ministry Camp", date: "2027-04-09", startTime: "08:00", endTime: "17:00", location: "Aburi Retreat Centre", description: "Three days of Bible teaching, games, nature walks and campfire worship for Juniors and Seniors.", image: kid("boysOutdoor", 1200, 800), logo: "", color: "#16A34A", category: "Camp", registerUrl: "", status: "published" },
+  { id: "parents-day-2027", title: "Parents' Day", date: "2027-05-16", startTime: "09:00", endTime: "11:00", location: "Children's Wing", description: "Sit in on your child's class, meet the teachers and see what they've been learning.", image: kid("girlLaugh", 1200, 800), logo: "", color: "#2563EB", category: "Family", registerUrl: "", status: "published" },
 ];
 
 const P = (id: string, kind: PostDoc["kind"], authorId: string, date: string, body: string, extra: Partial<PostDoc> = {}): PostDoc => ({
@@ -288,26 +300,29 @@ const P = (id: string, kind: PostDoc["kind"], authorId: string, date: string, bo
 });
 
 export const seedPosts: PostDoc[] = [
-  P("p1", "verse", "abena-owusu", "2026-10-07", "This Sunday every class is learning the parable of the Good Samaritan. Here's the verse to practise at home this week 👇", { verse: "Love your neighbour as yourself.", verseRef: "Luke 10:27", reactions: { "❤️": 82, "🙏": 31, "👍": 17 }, pinned: "yes" }),
-  P("p2", "video", "daniel-asante", "2026-10-05", "Primary 2 learned this week's memory verse as a song. Play it on the way to school and see if it sticks! 🎶", { videoUrl: "https://www.youtube.com/watch?v=ysz5S6PUM-U", reactions: { "❤️": 96, "👍": 40, "😂": 18 } }),
-  P("p3", "event", "yaw-amponsah", "2026-10-03", "Save the date! Our Children's Harvest is coming up. Children can bring a gift of food or school supplies for our partner schools 🧺", { eventId: "children-harvest-2026", reactions: { "❤️": 70, "👍": 33, "🙏": 18 } }),
-  P("p4", "photo", "esi-boateng", "2026-09-28", "Beginners built Zacchaeus' tree today — and every single leaf has a name on it, because Jesus knows each of us by name 🌳💛", { reactions: { "❤️": 120, "👍": 50, "😍": 27 } }),
-  P("p5", "news", "yaw-amponsah", "2026-09-21", "New check-in from this Sunday: please collect your family QR card at the welcome desk. Only the adults listed on the card can collect children after service. Thank you for helping us keep everyone safe!", { reactions: { "👍": 64, "❤️": 30, "🙏": 18 } }),
-  P("p6", "news", "kwame-mensah", "2026-09-14", "Seniors asked brilliant questions today about Daniel and standing firm when friends don't share your faith. Parents — ask them what they'd do in Daniel's shoes. You might be surprised 🦁", { reactions: { "❤️": 55, "👍": 28, "🙏": 12 } }),
+  P("p1", "verse", "abena-owusu", "2026-10-07", "This Sunday every class is learning the parable of the Good Samaritan. Here's the verse to practise at home this week 👇", { verse: "Love your neighbour as yourself.", verseRef: "Luke 10:27", reactions: { "❤️": 82, "🙏": 31, "👏": 17 }, pinned: "yes" }),
+  P("p2", "video", "daniel-asante", "2026-10-05", "Primary 2 learned this week's memory verse as a song. Play it on the way to school and see if it sticks! 🎶", { videoUrl: "https://www.youtube.com/watch?v=ysz5S6PUM-U", reactions: { "❤️": 96, "👏": 40, "😂": 18 } }),
+  P("p3", "event", "yaw-amponsah", "2026-10-03", "Save the date! Our Children's Harvest is coming up. Children can bring a gift of food or school supplies for our partner schools 🧺", { eventId: "children-harvest-2026", reactions: { "❤️": 70, "👏": 33, "🙏": 18 } }),
+  P("p4", "photo", "esi-boateng", "2026-09-28", "Beginners built Zacchaeus' tree today — and every single leaf has a name on it, because Jesus knows each of us by name 🌳💛", { images: [kid("toddler", 1200, 1200), kid("girlYellow", 1200, 1200), kid("kidsSmiling", 1200, 1200)], reactions: { "❤️": 120, "👏": 50, "😊": 27 } }),
+  P("p5", "news", "yaw-amponsah", "2026-09-21", "New check-in from this Sunday: please collect your family QR card at the welcome desk. Only the adults listed on the card can collect children after service. Thank you for helping us keep everyone safe!", { reactions: { "👏": 64, "❤️": 30, "🙏": 18 } }),
+  P("p6", "news", "kwame-mensah", "2026-09-14", "Seniors asked brilliant questions today about Daniel and standing firm when friends don't share your faith. Parents — ask them what they'd do in Daniel's shoes. You might be surprised 🦁", { reactions: { "❤️": 55, "👏": 28, "🙏": 12 } }),
 ];
 
-const G = (id: string, title: string, category: string, date: string, order: number, description: string): GalleryDoc => ({
-  id, title, category, date, order, description, cover: "", media: [], featured: order <= 4 ? "yes" : "no", status: "published",
+const G = (id: string, title: string, category: string, date: string, order: number, description: string, photos: Array<keyof typeof KIDS>): GalleryDoc => ({
+  id, title, category, date, order, description,
+  cover: kid(photos[0], 1200, 1500),
+  media: photos.map((p, i) => ({ type: "image" as const, url: kid(p, 1600), caption: i === 0 ? description : "" })),
+  featured: order <= 4 ? "yes" : "no", status: "published",
 });
 
 export const seedGallery: GalleryDoc[] = [
-  G("harvest-2025", "Children's Harvest 2025", "Children Harvest", "2025-10", 1, "Children led worship and brought gifts for our partner schools."),
-  G("palm-sunday-2026", "Palm Sunday 2026", "Hosanna", "2026-03", 2, "Waving palms and singing Hosanna around the church."),
-  G("graduation-2026", "Seniors Graduation 2026", "Graduation", "2026-07", 3, "Celebrating Seniors 2 as they move up to youth church."),
-  G("camp-2026", "Children's Ministry Camp 2026", "Camping", "2026-08", 4, "Three days of games, Bible teaching and campfire worship."),
-  G("parents-day-2026", "Parents Day 2026", "Parents Day", "2026-05", 5, "Families joined every class for the morning."),
-  G("botanical-gardens", "Trip to the Botanical Gardens", "Excursion", "2026-06", 6, "Exploring God's creation at the Aburi gardens."),
-  G("outreach-2025", "Neighbourhood Outreach", "Evangelism", "2025-12", 7, "Carols and gifts for our neighbours at Christmas."),
+  G("harvest-2025", "Children's Harvest 2025", "Children Harvest", "2025-10", 1, "Children led worship and brought gifts for our partner schools.", ["boysExcited","kidsSmiling","girlYellow","boyCrowd","group","girlLaugh"]),
+  G("palm-sunday-2026", "Palm Sunday 2026", "Hosanna", "2026-03", 2, "Waving palms and singing Hosanna around the church.", ["group","boySmile","girlSmile","boysGreen","twins"]),
+  G("graduation-2026", "Seniors Graduation 2026", "Graduation", "2026-07", 3, "Celebrating Seniors 2 as they move up to youth church.", ["boysBrown","girlUniform","fiveBoys","boyGrin","girlCross"]),
+  G("camp-2026", "Children's Ministry Camp 2026", "Camping", "2026-08", 4, "Three days of games, Bible teaching and campfire worship.", ["boysOutdoor","windowSill","boyOrange","boysExcited","toddler","groupClose"]),
+  G("parents-day-2026", "Parents Day 2026", "Parents Day", "2026-05", 5, "Families joined every class for the morning.", ["girlLaugh","toddler","girlYellow","boySmile","kidsSmiling"]),
+  G("botanical-gardens", "Trip to the Botanical Gardens", "Excursion", "2026-06", 6, "Exploring God's creation at the Aburi gardens.", ["window","boysGreen","girlSmile","boyGrin"]),
+  G("outreach-2025", "Neighbourhood Outreach", "Evangelism", "2025-12", 7, "Carols and gifts for our neighbours at Christmas.", ["groupClose","classroom","boyCrowd","twins","girlUniform"]),
 ];
 
 const F = (id: string, category: string, order: number, question: string, answer: string): FaqDoc => ({ id, category, order, question, answer, status: "published" });
@@ -323,15 +338,26 @@ export const seedFaqs: FaqDoc[] = [
   F("contact-teacher", "Parents", 8, "How do I get in touch with a teacher?", "Send us a message through the contact page or WhatsApp and we'll pass it straight to your child's class teachers. You can also catch them at drop-off or pick-up on Sundays."),
 ];
 
-const M = (id: string, year: string, order: number, title: string, description: string): MilestoneDoc => ({ id, year, order, title, description, image: "", status: "published" });
+const M = (id: string, year: string, order: number, title: string, description: string, photos: Array<keyof typeof KIDS> = []): MilestoneDoc => ({
+  id, kind: "milestone", year, order, title, description, image: photos[0] ? kid(photos[0], 1200, 900) : "", images: photos.slice(1).map((p) => kid(p, 800, 800)), stat: "", status: "published",
+});
+const A = (id: string, order: number, stat: string, title: string, description: string, year = ""): MilestoneDoc => ({
+  id, kind: "achievement", year, order, title, description, image: "", images: [], stat, status: "published",
+});
 
 export const seedMilestones: MilestoneDoc[] = [
-  M("m2006", "2006", 1, "Twelve children, one room", "Our children's ministry began in the church vestry with twelve children, two volunteer teachers and a borrowed flannel board."),
-  M("m2011", "2011", 2, "Classes by age", "As numbers grew past sixty, we split into Beginners, Primary and Juniors so every child could learn at the right level."),
-  M("m2015", "2015", 3, "Our first children's harvest", "Children led their own harvest service, raising food and school supplies for two partner schools in the Central Region."),
-  M("m2019", "2019", 4, "Seniors and safer check-in", "We launched Seniors classes for ages 11–13 and introduced secure check-in, safeguarding training and police background checks for all teachers."),
-  M("m2023", "2023", 5, "A new children's wing", "Nine bright classrooms opened, each designed around how children of that age learn, play and pray."),
-  M("m2026", "2026", 6, "Our ministry goes digital", "Families can now follow each week's lesson, play Bible games and browse our clothing collection on this website."),
+  M("m2006", "2006", 1, "Twelve children, one room", "Our children's ministry began in the church vestry with twelve children, two volunteer teachers and a borrowed flannel board.", ["classroom","window"]),
+  M("m2011", "2011", 2, "Classes by age", "As numbers grew past sixty, we split into Beginners, Primary and Juniors so every child could learn at the right level.", ["boysBrown","fiveBoys"]),
+  M("m2015", "2015", 3, "Our first children's harvest", "Children led their own harvest service, raising food and school supplies for two partner schools in the Central Region.", ["boysExcited","kidsSmiling"]),
+  M("m2019", "2019", 4, "Seniors and safer check-in", "We launched Seniors classes for ages 11–13 and introduced secure check-in, safeguarding training and police background checks for all teachers.", ["girlUniform","twins"]),
+  M("m2023", "2023", 5, "A new children's wing", "Nine bright classrooms opened, each designed around how children of that age learn, play and pray.", ["windowSill","boyCrowd"]),
+  M("m2026", "2026", 6, "Our ministry goes digital", "Families can now follow each week's lesson, play Bible games and browse our clothing collection on this website.", ["girlSmile","boyGrin"]),
+  A("a-children", 10, "180+", "Children every Sunday", "Up from twelve in 2006 — across nine age-based classes."),
+  A("a-teachers", 11, "24", "Trained teachers", "Every one background-checked and safeguarding-trained each year."),
+  A("a-harvest", 12, "11", "Children's harvests", "Food and school supplies for our partner schools every October."),
+  A("a-camps", 13, "9", "Ministry camps", "Three days of Bible, games and campfire worship each Easter break."),
+  A("a-verses", 14, "3,000+", "Memory verses learned", "Counted on our classroom verse walls since 2019."),
+  A("a-award", 15, "2024", "Presbytery recognition", "Commended by the Presbytery for our safeguarding and teacher training.", "2024"),
 ];
 
 const U = (id: string, order: number, title: string, icon: string, color: string, testament: UnitDoc["testament"], stories: string[], description: string): UnitDoc => ({
@@ -345,4 +371,30 @@ export const seedUnits: UnitDoc[] = [
   U("meeting-jesus", 4, "Meeting Jesus", "✨", "#3B82F6", "NT", ["Jesus and Nicodemus", "The Rich Young Man", "The Woman Caught in Sin"], "People whose lives changed when they met Jesus."),
   U("easter", 5, "The Road to Easter", "✝️", "#EF4444", "NT", ["The Triumphal Entry", "The Last Supper and Gethsemane", "The Burial and Resurrection", "The Road to Emmaus"], "From Palm Sunday to the empty tomb."),
   U("early-church", 6, "The Early Church", "⛓️", "#0EA5E9", "NT", ["Paul and Silas in Philippi"], "Brave believers who sang even in prison."),
+];
+
+const H = (id: string, page: string, eyebrow: string, title: string, intro: string, photos: Array<keyof typeof KIDS>, cta: [string, string] | null = null, cta2: [string, string] | null = null, style = "collage"): HeroDoc => ({
+  id, page, eyebrow, title, intro,
+  image: photos[0] ? kid(photos[0], 1400, 1100) : "",
+  images: photos.slice(1).map((p) => kid(p, 800, 1000)),
+  ctaLabel: cta?.[0] ?? "", ctaUrl: cta?.[1] ?? "", cta2Label: cta2?.[0] ?? "", cta2Url: cta2?.[1] ?? "",
+  style, status: "published",
+});
+
+/** One hero per page — edit the words, photos and buttons in the CMS under Website → Page heroes. */
+export const seedHeroes: HeroDoc[] = [
+  H("about", "About us", "About us", "Small hands, *big faith*.", "Helping children in Accra discover the Bible since 2006 — with trained teachers, joyful worship and a classroom for every age.", ["groupClose", "girlSmile", "boyGrin"], ["Meet the team", "/about/#teachers"], ["Our history", "/about/history/"]),
+  H("team", "Our team", "Our teachers", "Meet the team behind the *classes*.", "Every teacher is a church member, background-checked and safeguarding-trained — and they love your children.", ["classroom", "kidsSmiling"], ["Contact a teacher", "/contact/"], null, "photo"),
+  H("history", "History", "Since 2006", "Our *history* & achievements.", "From twelve children in a borrowed vestry to nine bright classrooms — the story of God's faithfulness to our children.", ["window", "boysBrown", "girlUniform"], ["Download our history", "#history-pdf"]),
+  H("classes", "Classes", "Classes", "A classroom for *every age*.", "Nine classes from age 3 to 13 — each with its own room, teachers and weekly Bible lesson.", ["classroom", "toddler", "boysGreen"], ["Find your child's class", "#beginners"]),
+  H("events", "Events", "Events", "What's on this *season*.", "Harvests, camps, nativity and family nights. Tap any event to add it to your calendar — or subscribe once and stay in sync.", ["boysExcited", "girlLaugh", "boysOutdoor"], ["See what's coming up", "#calendar"]),
+  H("blog", "Blog", "From our classrooms", "Stories, verses & *news*.", "Weekly verses, photos from class and news for families — straight from our teachers.", ["kidsSmiling", "girlYellow", "boySmile"], ["Latest posts", "#feed"]),
+  H("gallery", "Gallery", "Gallery", "Moments of *joy*.", "Harvests, camps, graduations and everyday Sundays — captured with every parent's consent.", ["boyCrowd", "twins", "girlSmile"], ["Browse albums", "#albums"]),
+  H("contact", "Contact", "Get in touch", "We'd love to *hear from you*.", "Questions about your first Sunday, classes or safeguarding? Send a message or WhatsApp us — we reply within a day.", ["girlLaugh", "boyGrin"], ["Send a message", "#form-title"], ["WhatsApp us", "whatsapp"]),
+  H("games", "Bible Games", "Kids Zone", "Play your way through the *Bible*.", "Short lessons, friendly mascots and badges to earn — learn the big stories one level at a time.", ["boysExcited", "girlYellow"], ["Start playing", "#play"], null, "photo"),
+  H("collection", "Clothing", "Kids Zone · Clothing", "Wear your *faith*.", "Soft tees, hoodies and long sleeves with Bible-inspired prints — choose your colour and size, then request yours.", [], ["Shop the collection", "#shop"], null, "plain"),
+  H("safeguarding", "Safeguarding", "Safeguarding", "Safe to learn, *free to play*.", "How we keep every child safe — from vetting teachers to check-in and photos.", [], null, null, "plain"),
+  H("accessibility", "Accessibility", "Accessibility", "A website for *everyone*.", "How we make this site and our classrooms work for every child and family.", [], null, null, "plain"),
+  H("privacy", "Privacy", "Privacy", "Your *privacy*.", "What we collect, why, and the choices you have.", [], null, null, "plain"),
+  H("terms", "Terms", "Terms", "Terms of *use*.", "The simple rules for using this website.", [], null, null, "plain"),
 ];

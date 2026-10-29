@@ -69,3 +69,38 @@ export function downloadIcs(events: EventDoc[], name: string) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+function localStamp(date: string, time?: string) {
+  return `${date}T${time || "09:00"}:00`;
+}
+
+/** Outlook (web) "add event" link. */
+export function outlookUrl(e: EventDoc, location = "", office = false) {
+  const end = e.endTime || (() => {
+    const [h, m] = (e.startTime || "09:00").split(":").map(Number);
+    return `${String(Math.min(23, h + 2)).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  })();
+  const p = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: e.title,
+    startdt: localStamp(e.date, e.startTime),
+    enddt: localStamp(e.date, end),
+    location: [e.location, location].filter(Boolean).join(", "),
+    body: e.description,
+  });
+  return `https://${office ? "outlook.office.com" : "outlook.live.com"}/calendar/0/deeplink/compose?${p}`;
+}
+
+/** Links that subscribe a calendar app to the live feed (it refreshes by itself). */
+export function subscribeLinks(feedUrl: string, name = "Children's Ministry") {
+  const webcal = feedUrl.replace(/^https?:/, "webcal:");
+  return {
+    google: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`,
+    apple: webcal,
+    outlook: `https://outlook.live.com/calendar/0/addfromweb?url=${encodeURIComponent(feedUrl)}&name=${encodeURIComponent(name)}`,
+    office: `https://outlook.office.com/calendar/0/addfromweb?url=${encodeURIComponent(feedUrl)}&name=${encodeURIComponent(name)}`,
+    https: feedUrl,
+    webcal,
+  };
+}

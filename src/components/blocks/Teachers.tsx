@@ -7,6 +7,7 @@ import type { TeacherDoc } from "@/lib/cms/types";
 import { initials } from "@/lib/site";
 import { useContent } from "@/lib/useContent";
 import { cn } from "@/lib/cn";
+import { sized } from "@/lib/img";
 
 const TEAMS = ["All", "Beginners", "Primary", "Juniors", "Seniors", "Leadership"];
 const AV = ["#FFE7A6", "#DDE8FF", "#FDE2E2", "#D9F5E5", "#EDE9FE"];
@@ -14,7 +15,7 @@ const AV = ["#FFE7A6", "#DDE8FF", "#FDE2E2", "#D9F5E5", "#EDE9FE"];
 export function Avatar({ t, size = 56, i = 0 }: { t: TeacherDoc; size?: number; i?: number }) {
   return t.photo ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={t.photo} alt="" width={size} height={size} className="shrink-0 rounded-2xl object-cover" style={{ width: size, height: size }} />
+    <img src={sized(t.photo, size * 2, size * 2)} alt="" width={size} height={size} className="shrink-0 rounded-2xl object-cover" style={{ width: size, height: size }} />
   ) : (
     <span className="grid shrink-0 place-items-center rounded-2xl font-display font-extrabold text-ink" style={{ width: size, height: size, background: AV[i % AV.length], fontSize: size * 0.36 }} aria-hidden>
       {initials(t.name)}

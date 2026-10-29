@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { SplitWords } from "@/components/motion/SplitWords";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -94,11 +95,13 @@ export function SectionHeading({
     <div className={cn("flex flex-wrap items-end justify-between gap-4", center && "justify-center text-center", className)}>
       <div className={cn("max-w-2xl", center && "mx-auto")}>
         {eyebrow ? <Eyebrow tone={light ? "white" : tone}>{eyebrow}</Eyebrow> : null}
-        <h2 className={cn("mt-3 font-display text-[2.1rem] font-extrabold leading-[1.05] sm:text-5xl text-balance", light ? "text-white" : "text-ink")}>{title}</h2>
+        <h2 data-split className={cn("mt-3 font-display text-[2.1rem] font-extrabold leading-[1.05] sm:text-5xl text-balance", light ? "text-white" : "text-ink")}>
+          <SplitWords text={title} mark={light ? "sun" : "squiggle"} />
+        </h2>
         {intro ? <p className={cn("mt-3 text-base leading-7 sm:text-lg", light ? "text-white/75" : "text-ink/65")}>{intro}</p> : null}
       </div>
       {action ? (
-        <Link href={action.href} className="btn btn-ghost !py-2.5 text-sm">
+        <Link href={action.href} className="btn btn-ghost !py-2.5 text-sm" data-magnetic>
           {action.label} <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       ) : null}

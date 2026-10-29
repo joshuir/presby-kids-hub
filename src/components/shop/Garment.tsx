@@ -10,6 +10,23 @@ import type { Colorway, ProductDoc } from "@/lib/cms/types";
  * The garment colour is read from the CSS variable --garment so GSAP can tween it.
  */
 
+/** Ribbed bands (collar, cuffs, hem) and stitch lines drawn on top of each garment for realism. */
+const RIBS: Record<string, { bands: string[]; stitches: string[] }> = {
+  tee: {
+    bands: ["M150 40 C170 64 230 64 250 40"],
+    stitches: ["M100 418 C160 427 240 427 300 418", "M86 152 L46 136", "M314 152 L354 136"],
+  },
+  longsleeve: {
+    bands: ["M150 40 C170 64 230 64 250 40", "M380 292 L348 304", "M20 292 L52 304"],
+    stitches: ["M100 418 C160 427 240 427 300 418"],
+  },
+  hoodie: {
+    bands: ["M100 424 C160 436 240 436 300 424", "M382 292 L348 306", "M18 292 L52 306"],
+    stitches: ["M130 330 L270 330", "M120 340 L106 404", "M280 340 L294 404"],
+  },
+  other: { bands: [], stitches: [] },
+};
+
 export const PATHS: Record<string, { body: string; extras: string[]; print: { x: number; y: number; w: number } }> = {
   tee: {
     body: "M150 40 C170 58 230 58 250 40 L330 70 L372 150 L322 176 L304 148 L304 430 C240 440 160 440 96 430 L96 148 L78 176 L28 150 L70 70 Z",
@@ -113,6 +130,11 @@ export function Garment({
           <stop offset=".82" stopColor="#000" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity=".25" />
         </linearGradient>
+        <radialGradient id={`sheen-${uid}`} cx="35%" cy="25%" r="70%">
+          <stop offset="0" stopColor="#fff" stopOpacity=".55" />
+          <stop offset=".6" stopColor="#fff" stopOpacity="0" />
+          <stop offset="1" stopColor="#000" stopOpacity=".25" />
+        </radialGradient>
         <linearGradient id={`drop-${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#000" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity=".18" />
@@ -162,6 +184,19 @@ export function Garment({
             </text>
           ))}
         </g>
+        {/* ribbed bands + stitching */}
+        {(RIBS[product.category] ?? RIBS.tee).bands.map((d, i) => (
+          <g key={`b${i}`}>
+            <path d={d} fill="none" stroke="#000" strokeOpacity=".16" strokeWidth="12" strokeLinecap="round" />
+            <path d={d} fill="none" stroke="#000" strokeOpacity=".22" strokeWidth="12" strokeLinecap="round" strokeDasharray="1.2 2.4" />
+            <path d={d} fill="none" stroke="#fff" strokeOpacity=".18" strokeWidth="2" transform="translate(0 -5)" />
+          </g>
+        ))}
+        {(RIBS[product.category] ?? RIBS.tee).stitches.map((d, i) => (
+          <path key={`s${i}`} d={d} fill="none" stroke="#000" strokeOpacity=".22" strokeWidth="1.3" strokeDasharray="5 3" />
+        ))}
+        {/* soft studio sheen */}
+        <rect width="400" height="460" fill={`url(#sheen-${uid})`} style={{ mixBlendMode: "soft-light" }} />
         {/* woven label on the hem */}
         <rect x="296" y="400" width="6" height="16" rx="1" fill="#111" opacity=".75" />
       </g>

@@ -10,26 +10,29 @@ import { AccountPanel, SubAdminsPanel } from "./TeamPanels";
 import { useAdmin } from "@/components/admin/AdminGate";
 import { adminDelete, adminList, adminReset, adminUpsert, adminUpsertMany, deleteMedia, listMedia, rpc } from "@/lib/cms/client";
 import { MessagesPanel } from "./MessagesPanel";
+import { CommentsPanel } from "./CommentsPanel";
 import type { ProductDoc } from "@/lib/cms/types";
 
 type Doc = Record<string, unknown> & { id?: string; status?: Status; publishAt?: string; updatedAt?: string };
-type Tab = Exclude<CollectionName, never> | "media" | "team" | "account" | "messages";
-const PANEL_TABS = ["media", "team", "account", "messages"] as const;
+type Tab = Exclude<CollectionName, never> | "media" | "team" | "account" | "messages" | "comments";
+const PANEL_TABS = ["media", "team", "account", "messages", "comments"] as const;
 const isPanel = (t: Tab) => (PANEL_TABS as readonly string[]).includes(t);
 /** database permission section that guards each tab */
-const PERM: Partial<Record<Tab, string>> = { settings: "pages", faqs: "pages", milestones: "pages", posts: "blog", units: "questions" };
-const ORDERED = ["classes", "products", "teachers", "milestones", "faqs", "gallery", "units"];
+const PERM: Partial<Record<Tab, string>> = { settings: "pages", faqs: "pages", milestones: "pages", heroes: "pages", posts: "blog", comments: "blog", units: "questions" };
+const ORDERED = ["classes", "products", "teachers", "milestones", "faqs", "gallery", "units", "mascots"];
 
 const TABS: { key: Tab; label: string; icon: string; group: string }[] = [
   { key: "settings", label: "Site & pages", icon: "⚙️", group: "Website" },
+  { key: "heroes", label: "Page heroes", icon: "🖼️", group: "Website" },
   { key: "classes", label: "Classes", icon: "🏫", group: "Website" },
   { key: "lessons", label: "Lessons", icon: "📚", group: "Website" },
   { key: "teachers", label: "Teachers", icon: "👩‍🏫", group: "Website" },
   { key: "events", label: "Events", icon: "📅", group: "Website" },
-  { key: "posts", label: "Feed posts", icon: "📝", group: "Website" },
+  { key: "posts", label: "Blog posts", icon: "📝", group: "Website" },
+  { key: "comments", label: "Comments", icon: "💬", group: "Website" },
   { key: "gallery", label: "Gallery", icon: "📸", group: "Website" },
   { key: "faqs", label: "FAQs", icon: "❔", group: "Website" },
-  { key: "milestones", label: "History", icon: "🕰️", group: "Website" },
+  { key: "milestones", label: "History & achievements", icon: "🕰️", group: "Website" },
   { key: "units", label: "Game units", icon: "🗺️", group: "Kids Zone" },
   { key: "questions", label: "Game questions", icon: "❓", group: "Kids Zone" },
   { key: "mascots", label: "Mascots", icon: "🦁", group: "Kids Zone" },
@@ -287,8 +290,12 @@ export function CmsApp() {
     if (tab === "posts") return `/blog/#${d.id}`;
     if (tab === "events") return `/events/#${d.id}`;
     if (tab === "gallery") return `/gallery/?album=${d.id}`;
-    if (tab === "teachers") return `/about/?teacher=${d.id}#teachers`;
-    if (tab === "milestones") return "/about/#history";
+    if (tab === "teachers") return `/about/team/?teacher=${d.id}`;
+    if (tab === "milestones") return "/about/history/";
+    if (tab === "heroes") {
+      const map: Record<string, string> = { about: "/about/", team: "/about/team/", history: "/about/history/", classes: "/classes/", events: "/events/", blog: "/blog/", gallery: "/gallery/", contact: "/contact/", games: "/games/", collection: "/collection/", safeguarding: "/safeguarding/", accessibility: "/accessibility/", privacy: "/privacy/", terms: "/terms/" };
+      return map[String(d.id)] ?? "/";
+    }
     if (tab === "faqs") return "/contact/";
     return "/";
   };
@@ -325,7 +332,9 @@ export function CmsApp() {
         ])}
       </div>
 
-      {tab === "messages" ? (
+      {tab === "comments" ? (
+        <CommentsPanel notify={notify} />
+      ) : tab === "messages" ? (
         <MessagesPanel notify={notify} />
       ) : tab === "team" ? (
         <SubAdminsPanel notify={notify} />

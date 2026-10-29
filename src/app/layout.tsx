@@ -5,6 +5,7 @@ import "./globals.css";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteSettingsProvider } from "@/lib/site";
+import { MotionDirector } from "@/components/motion/MotionDirector";
 
 const DESC =
   "The children's ministry of Presbyterian Church, Accra — Bible-centred Sunday classes for ages 3 to 13, Bible games and our clothing collection.";
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <SiteHeader />
           <main id="main" className="min-h-[70dvh]">{children}</main>
           <SiteFooter />
+          <MotionDirector />
         </SiteSettingsProvider>
       </body>
     </html>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { EventDoc } from "@/lib/cms/types";
 import { cn } from "@/lib/cn";
 import { todayISO } from "@/lib/format";
+import { sized } from "@/lib/img";
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -44,7 +45,7 @@ export function MonthCalendar({
   return (
     <div className="card p-4 sm:p-5">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-display text-xl font-bold sm:text-2xl" aria-live="polite">{label}</h2>
+        <h2 className="font-display text-2xl font-extrabold sm:text-3xl" aria-live="polite">{label}</h2>
         <div className="flex items-center gap-1">
           <button type="button" className="rounded-full px-3 py-2 text-xs font-bold ring-1 ring-ink/10 hover:bg-paper" onClick={() => { onMonth(new Date()); onSelect(null); }}>
             Today
@@ -57,7 +58,7 @@ export function MonthCalendar({
           </button>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold uppercase tracking-wider text-ink/45">
+      <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-extrabold uppercase tracking-wider text-ink/45 sm:text-sm">
         {(compact ? ["M", "T", "W", "T", "F", "S", "S"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]).map((d, i) => (
           <div key={i} className="py-1">{d}</div>
         ))}
@@ -77,8 +78,8 @@ export function MonthCalendar({
               aria-pressed={isSel}
               aria-label={`${d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}${evs.length ? `: ${evs.map((e) => e.title).join(", ")}` : ""}`}
               className={cn(
-                "relative flex flex-col items-center justify-start rounded-xl p-1 text-sm font-bold transition",
-                compact ? "aspect-square" : "min-h-[64px] sm:min-h-[84px] sm:items-start sm:p-2",
+                "relative flex flex-col items-center justify-start rounded-xl p-1 font-bold transition",
+                compact ? "aspect-square text-sm" : "min-h-[72px] text-base sm:min-h-[118px] sm:p-2 sm:text-lg",
                 !inMonth && "text-ink/25",
                 k === today && "ring-2 ring-blueBrand-600",
                 evs.length ? (isSel ? "bg-blueBrand-600 text-white" : "bg-sky-soft text-blueBrand-800 hover:bg-blueBrand-100") : "cursor-default",
@@ -89,10 +90,26 @@ export function MonthCalendar({
                 compact ? (
                   <span className={cn("mt-0.5 h-1.5 w-1.5 rounded-full", isSel ? "bg-white" : "bg-blueBrand-600")} />
                 ) : (
-                  <span className="mt-1 hidden w-full truncate text-left text-[11px] font-semibold leading-tight sm:block">{evs[0].title}</span>
+                  <span className="mt-1 flex w-full flex-col items-center">
+                    <span className="flex -space-x-3">
+                      {evs.slice(0, 2).map((e) => {
+                        const pic = e.logo || e.image;
+                        return (
+                          <span key={e.id} className="block h-8 w-8 overflow-hidden rounded-full border-2 border-white bg-white shadow sm:h-12 sm:w-12" style={{ boxShadow: `0 0 0 2px ${e.color || "#2563EB"}` }}>
+                            {pic ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={sized(pic, 100, 100)} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="grid h-full w-full place-items-center text-xs font-extrabold">{e.title[0]}</span>
+                            )}
+                          </span>
+                        );
+                      })}
+                    </span>
+                    <span className="mt-1 hidden w-full truncate text-center text-xs font-bold leading-tight sm:block">{evs[0].title}</span>
+                  </span>
                 )
               ) : null}
-              {evs.length && !compact ? <span className={cn("mt-1 h-1.5 w-1.5 rounded-full sm:hidden", isSel ? "bg-white" : "bg-blueBrand-600")} /> : null}
             </button>
           );
         })}

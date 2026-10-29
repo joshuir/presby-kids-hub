@@ -2,6 +2,8 @@ import {
   CalendarDays,
   Gamepad2,
   GraduationCap,
+  History,
+  Users,
   Home,
   Images,
   Info,
@@ -18,7 +20,17 @@ export type NavItem = { key: string; href: string; label: string; icon: LucideIc
 /** Main menu — mirrors the reference site, plus a Kids Zone for games and the collection. */
 export const NAV: NavItem[] = [
   { key: "home", href: "/", label: "Home", icon: Home },
-  { key: "about", href: "/about/", label: "About", icon: Info },
+  {
+    key: "about",
+    href: "/about/",
+    label: "About",
+    icon: Info,
+    children: [
+      { href: "/about/", label: "About us", description: "Our vision, mission and what we believe", icon: Info },
+      { href: "/about/team/", label: "Our team", description: "Meet the teachers behind every class", icon: Users },
+      { href: "/about/history/", label: "History & achievements", description: "Twenty years of growing faith", icon: History },
+    ],
+  },
   { key: "classes", href: "/classes/", label: "Classes", icon: GraduationCap, mega: "classes" },
   { key: "events", href: "/events/", label: "Events", icon: CalendarDays },
   { key: "blog", href: "/blog/", label: "Blog", icon: Newspaper },

@@ -19,7 +19,7 @@ export function ClassesPage() {
   const groups = s.groups.map(parts);
   return (
     <div>
-      <PageHero eyebrow="Classes" title="Find your child's class" intro="Ages 3 to 13, grouped so every lesson fits.">
+      <PageHero page="classes" eyebrow="Classes" title="Find your child's class" intro="Ages 3 to 13, grouped so every lesson fits.">
         <nav aria-label="Age groups" className="flex flex-wrap gap-2">
           {groups.map(([key, label, ages]) => (
             <a key={key} href={`#${key}`} className="rounded-full bg-white px-4 py-2 text-sm font-extrabold shadow-soft ring-1 ring-ink/5 transition hover:-translate-y-0.5">

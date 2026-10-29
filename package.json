@@ -13,7 +13,6 @@
     "@fontsource-variable/nunito-sans": "^5.2.7",
     "@supabase/supabase-js": "^2.118.0",
     "@types/qrcode": "^1.5.5",
-    "@types/three": "^0.186.0",
     "framer-motion": "^12.38.0",
     "gsap": "^3.14.2",
     "lucide-react": "^0.468.0",
@@ -21,7 +20,7 @@
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "three": "^0.186.1",
+    "three": "^0.180.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -29,6 +28,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.186.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.7",
     "tailwindcss": "^4",

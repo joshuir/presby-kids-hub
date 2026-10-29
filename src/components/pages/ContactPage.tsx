@@ -30,7 +30,7 @@ export function ContactPage() {
   ];
   return (
     <div>
-      <PageHero eyebrow="Contact" title="We'd love to meet you" intro="A real person from our team will reply.">
+      <PageHero page="contact" eyebrow="Contact" title="We'd love to meet you" intro="A real person from our team will reply.">
         <div className="flex flex-wrap gap-2">
           <a href={telLink(s.phone)} className="btn btn-primary !py-2.5 text-sm"><Phone className="h-4 w-4" aria-hidden /> Call</a>
           <a href={waLink(s.whatsapp)} target="_blank" rel="noreferrer" className="btn btn-ghost !py-2.5 text-sm"><MessageCircle className="h-4 w-4" aria-hidden /> WhatsApp</a>
@@ -55,7 +55,7 @@ export function ContactPage() {
       </Container>
 
       <Container className="mt-20">
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.6fr]">
+        <div className="grid gap-8 [&>*]:min-w-0 lg:grid-cols-[1fr_1.6fr]">
           <SectionHeading eyebrow="FAQs" title="Before you visit" intro="Quick answers to the questions we hear most." />
           <Faqs askHref="#form-title" />
         </div>

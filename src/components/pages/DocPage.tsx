@@ -17,7 +17,7 @@ export function DocPage({ kind }: { kind: keyof typeof DOCS }) {
   const d = DOCS[kind];
   return (
     <div>
-      <PageHero eyebrow={d.eyebrow} title={d.title} intro={d.intro}>
+      <PageHero page={kind} eyebrow={d.eyebrow} title={d.title} intro={d.intro}>
         <p className="text-sm font-semibold text-ink/50">Last updated {s.pagesUpdated}</p>
       </PageHero>
       <Container className="max-w-3xl">

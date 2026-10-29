@@ -5,6 +5,7 @@ import gsap from "gsap";
 import type { ProductDoc } from "@/lib/cms/types";
 import { cn } from "@/lib/cn";
 import { Garment } from "./Garment";
+import { sizeName } from "./ShopGrid";
 
 function money(p: ProductDoc) {
   try {
@@ -334,7 +335,7 @@ export function CollectionShowcase({
               </button>
             </div>
             <p className="mt-3 text-sm leading-6 text-black/70">{product.description}</p>
-            <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {product.sizes.map((z) => {
                 const n = product.stock?.[z] ?? 0;
                 return (
@@ -349,21 +350,21 @@ export function CollectionShowcase({
                       n <= 0 && "cursor-not-allowed text-black/30 line-through",
                     )}
                   >
-                    {z}
+                    {sizeName(z)}
                     <span className="block text-[10px] font-semibold opacity-70">{n <= 0 ? "Sold out" : `${n} left`}</span>
                   </button>
                 );
               })}
             </div>
             <a
-              href={`/contact/?subject=${encodeURIComponent("Clothing collection")}&message=${encodeURIComponent(`I’d like to request: ${product.name} — ${colorway?.name ?? ""}${size ? ` — size ${size}` : ""}`)}#form-title`}
+              href={`/contact/?subject=${encodeURIComponent("Clothing collection")}&message=${encodeURIComponent(`I’d like to request: ${product.name} — ${colorway?.name ?? ""}${size ? ` — size ${sizeName(size)}` : ""}`)}#form-title`}
               className={cn(
                 "mt-5 block rounded-full bg-black px-6 py-3 text-center text-sm font-bold uppercase tracking-widest text-white",
                 !size && "pointer-events-none opacity-40",
               )}
               aria-disabled={!size}
             >
-              {size ? `Request size ${size}` : "Pick a size"}
+              {size ? `Request size ${sizeName(size)}` : "Pick a size"}
             </a>
           </div>
         </div>

@@ -10,17 +10,23 @@ import {
   seedSettings,
   seedTeachers,
   seedUnits,
+  seedHeroes,
 } from "./content";
 
 export * from "./content";
 
+const MZ = (id: string, name: string, kind: MascotDoc["kind"], emoji: string, color: string, accent: string, unlockXp: number, description: string, catchphrase: string): MascotDoc => ({
+  id, name, kind, emoji, color, accent, unlockXp, description, catchphrase,
+  imageIdle: "", imageHappy: "", imageSad: "", imageCheer: "", imageThink: "", status: "published",
+});
+
 export const seedMascots: MascotDoc[] = [
-  { id: "lamb", name: "Lumi the Lamb", emoji: "🐑", color: "#F1F5F9", unlockXp: 0, description: "Gentle and brave — a great first friend.", status: "published" },
-  { id: "lion", name: "Leo the Lion", emoji: "🦁", color: "#F59E0B", unlockXp: 0, description: "Bold like the Lion of Judah.", status: "published" },
-  { id: "dove", name: "Dot the Dove", emoji: "🕊️", color: "#E0F2FE", unlockXp: 0, description: "Peaceful and kind.", status: "published" },
-  { id: "fish", name: "Gill the Great Fish", emoji: "🐋", color: "#38BDF8", unlockXp: 150, description: "Unlocked at 150 XP — ask Jonah!", status: "published" },
-  { id: "donkey", name: "Dash the Donkey", emoji: "🫏", color: "#A8A29E", unlockXp: 300, description: "Unlocked at 300 XP — carried a King.", status: "published" },
-  { id: "camel", name: "Cam the Camel", emoji: "🐪", color: "#D6A15A", unlockXp: 600, description: "Unlocked at 600 XP — needle not included.", status: "published" },
+  MZ("lamb", "Lumi the Lamb", "lamb", "🐑", "#F8FAFC", "#FBCFE8", 0, "Gentle and brave — a great first friend.", "Baa-rilliant!"),
+  MZ("lion", "Leo the Lion", "lion", "🦁", "#F59E0B", "#FDE68A", 0, "Bold like the Lion of Judah.", "Roar-some work!"),
+  MZ("dove", "Dot the Dove", "dove", "🕊️", "#E0F2FE", "#BAE6FD", 0, "Peaceful and kind.", "Peace and high-fives!"),
+  MZ("owl", "Ollie the Owl", "owl", "🦉", "#A16207", "#FDE68A", 150, "Unlocked at 150 XP — wise as Solomon.", "Hoo-ray, that's wise!"),
+  MZ("bear", "Bo the Bear", "bear", "🐻", "#92400E", "#FCD34D", 300, "Unlocked at 300 XP — strong and cuddly.", "Bear-y well done!"),
+  MZ("fox", "Finn the Fox", "fox", "🦊", "#EA580C", "#FFEDD5", 600, "Unlocked at 600 XP — quick and clever.", "Fox-tastic!"),
 ];
 
 export const seedProducts: ProductDoc[] = [
@@ -40,6 +46,10 @@ export const seedProducts: ProductDoc[] = [
       { name: "Midnight", hex: "#14161C", printHex: "#F4F4F5", tagHex: "#14161C" },
       { name: "Lemon", hex: "#F5D33A", printHex: "#FFFFFF", tagHex: "#F5D33A" },
     ],
+    badge: "Bestseller",
+    material: "Heavyweight 100% cotton, 220gsm",
+    care: "Machine wash cold, inside out. Do not iron the print.",
+    photos: [],
     order: 1,
     status: "published",
   },
@@ -59,6 +69,10 @@ export const seedProducts: ProductDoc[] = [
       { name: "Forest", hex: "#1F5135", printHex: "#E9F5DB", tagHex: "#1F5135" },
       { name: "Cream", hex: "#EFE6D2", printHex: "#1D1313", tagHex: "#EFE6D2" },
     ],
+    badge: "New",
+    material: "80% cotton / 20% polyester brushed fleece",
+    care: "Machine wash cold, inside out. Do not iron the print.",
+    photos: [],
     order: 2,
     status: "published",
   },
@@ -78,6 +92,10 @@ export const seedProducts: ProductDoc[] = [
       { name: "Aqua", hex: "#00DDFF", printHex: "#FFFFFF", tagHex: "#00DDFF" },
       { name: "Snow", hex: "#F8F8F8", printHex: "#2563EB", tagHex: "#E5E7EB" },
     ],
+    badge: "",
+    material: "100% combed cotton, 180gsm",
+    care: "Machine wash cold, inside out. Do not iron the print.",
+    photos: [],
     order: 3,
     status: "published",
   },
@@ -97,6 +115,10 @@ export const seedProducts: ProductDoc[] = [
       { name: "Clay", hex: "#C2410C", printHex: "#FFF7ED", tagHex: "#C2410C" },
       { name: "Stone", hex: "#D6D3D1", printHex: "#1D1313", tagHex: "#D6D3D1" },
     ],
+    badge: "Limited",
+    material: "100% cotton, 200gsm",
+    care: "Machine wash cold, inside out. Do not iron the print.",
+    photos: [],
     order: 4,
     status: "published",
   },
@@ -112,6 +134,7 @@ export const SEEDS: Record<CollectionName, Array<{ id: string }>> = {
   gallery: seedGallery,
   faqs: seedFaqs,
   milestones: seedMilestones,
+  heroes: seedHeroes,
   classes: seedClasses,
   lessons: seedLessons,
   units: seedUnits,

@@ -22,7 +22,7 @@ import {
   type Player,
 } from "./game-logic";
 import { NODE_LABEL, NODE_XP, PASS_MARK, buildLesson, pathState, type LessonQ, type NodeKind } from "./path";
-import { Mascot, type Mood } from "./Mascot";
+import { Buddy, Mascot, useMascotDoc, type Mood } from "./Mascot";
 
 const LS_KEY = "cm_player_v1";
 const HEARTS = 5;
@@ -59,7 +59,7 @@ function Setup({ mascots, initial, onDone, onCancel }: { mascots: GameMascot[]; 
       <div className="card p-6 sm:p-8">
         <h2 className="font-display text-3xl font-extrabold">{initial.name ? "Change your mascot" : "Choose your mascot"}</h2>
         <p className="mt-1 text-ink/60">Pick a nickname (not your full name) and a friend to cheer you on.</p>
-        <div className="mt-6 flex justify-center">{m ? <Mascot emoji={m.emoji} color={color} accessory={acc} mood="happy" size={110} say={name ? `Hi ${name}!` : "Hi there!"} /> : null}</div>
+        <div className="mt-6 flex justify-center">{m ? <Mascot emoji={m.emoji} color={color} accessory={acc} mood="wave" size={120} say={name ? `Hi ${name}! I'm ${m.name.split(" ")[0]}.` : `Hi there! I'm ${m.name.split(" ")[0]}.`} /> : null}</div>
         <label className="mt-6 grid gap-1.5 text-sm font-bold">
           Your name
           <input aria-label="Your name" value={name} maxLength={20} onChange={(e) => setName(e.target.value.replace(/[<>]/g, ""))} placeholder="e.g. Kofi" className="h-12 rounded-2xl bg-paper px-4 text-base outline-none ring-1 ring-ink/10 focus:ring-2 focus:ring-blueBrand-500" />
@@ -79,9 +79,9 @@ function Setup({ mascots, initial, onDone, onCancel }: { mascots: GameMascot[]; 
                   setM(x);
                   setColor(x.color);
                 }}
-                className={cn("relative grid aspect-square place-items-center rounded-2xl text-4xl transition", m?.id === x.id ? "bg-blueBrand-600 shadow-[0_4px_0_#173EA8]" : "bg-paper", locked && "opacity-40")}
+                className={cn("relative grid aspect-square place-items-center rounded-2xl transition", m?.id === x.id ? "bg-blueBrand-600 shadow-[0_4px_0_#173EA8]" : "bg-paper hover:bg-sky-soft", locked && "opacity-40 grayscale")}
               >
-                {x.emoji}
+                <Buddy kind={(x as { kind?: Parameters<typeof Buddy>[0]["kind"] }).kind ?? "lion"} color={x.color} accent={(x as { accent?: string }).accent} size={58} look={false} mood={m?.id === x.id ? "happy" : "idle"} />
                 {locked ? <span className="absolute bottom-1 text-[10px] font-extrabold text-ink">{x.unlockXp} XP</span> : null}
               </button>
             );
@@ -167,6 +167,11 @@ function PathView({ units, player, onStart }: { units: UnitDoc[]; player: Player
               return (
                 <li key={n.id} className="relative" style={{ transform: `translateX(${OFFSETS[(i + ui * 3) % OFFSETS.length]}px)` }}>
                   {isCurrent ? (
+                    <div className={cn("pointer-events-none absolute top-1/2 z-10 -translate-y-1/2", OFFSETS[(i + ui * 3) % OFFSETS.length] > 0 ? "right-[calc(100%+14px)]" : "left-[calc(100%+14px)]")} aria-hidden>
+                      <Mascot emoji={player.mascotEmoji} color={player.mascotColor} accessory={player.accessory} mood="wave" size={70} />
+                    </div>
+                  ) : null}
+                  {isCurrent ? (
                     <motion.div initial={{ y: 4 }} animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 1.4 }} className="absolute -top-11 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-xl border-2 border-ink/10 bg-white px-3 py-1.5 text-sm font-extrabold uppercase" style={{ color: u.color }}>
                       {player.path?.[n.id] ? "Practise" : "Start"}
                     </motion.div>
@@ -200,6 +205,20 @@ function PathView({ units, player, onStart }: { units: UnitDoc[]; player: Player
         </section>
       ))}
     </div>
+  );
+}
+
+function ResultMascot({ player, passed }: { player: Player; passed: boolean }) {
+  const doc = useMascotDoc(player.mascotEmoji);
+  return (
+    <Mascot
+      emoji={player.mascotEmoji}
+      color={player.mascotColor}
+      accessory={player.accessory}
+      mood={passed ? "cheer" : "sad"}
+      size={130}
+      say={passed ? doc?.catchphrase || "Well done!" : "Let's try again together!"}
+    />
   );
 }
 
@@ -385,7 +404,7 @@ function Results({ r, player, unit, kind, fresh, onContinue, onRetry }: { r: Les
   return (
     <div ref={ref} className="relative mx-auto max-w-xl overflow-hidden text-center">
       <div className="flex justify-center pt-4">
-        <Mascot emoji={player.mascotEmoji} color={player.mascotColor} accessory={player.accessory} mood={passed ? "cheer" : "sad"} size={120} />
+        <ResultMascot player={player} passed={passed} />
       </div>
       <h2 className={cn("mt-6 font-display text-4xl font-extrabold", passed ? "text-[#E5A300]" : "text-[#B91C1C]")}>
         {r.failed ? "Out of hearts!" : passed ? `${NODE_LABEL[kind]} complete!` : "So close!"}

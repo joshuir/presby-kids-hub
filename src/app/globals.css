@@ -108,6 +108,26 @@ h1, h2, h3, .font-display {
 
 }
 
+/* soft glare that follows the pointer on [data-tilt] cards */
+.tilt-glare { position: relative; will-change: transform; }
+.tilt-glare::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s ease;
+  background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,.35), transparent 45%);
+}
+.tilt-glare:hover::after { opacity: 1; }
+
+/* continuous marquees (paused on hover/focus, stopped for reduced motion) */
+@keyframes marquee-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee { display: flex; width: max-content; animation: marquee-x var(--marquee-speed, 40s) linear infinite; }
+.marquee.reverse { animation-direction: reverse; }
+.marquee-wrap:hover .marquee, .marquee-wrap:focus-within .marquee, .marquee-wrap[data-paused="true"] .marquee { animation-play-state: paused; }
+html[data-motion="off"] .marquee { animation: none; }
+
+/* image zoom on hover inside cards */
+.zoom-img { overflow: hidden; }
+.zoom-img img { transition: transform .9s cubic-bezier(.2,.7,.2,1); }
+.group:hover .zoom-img img, .zoom-img:hover img { transform: scale(1.06); }
+
 .text-balance { text-wrap: balance; }
 .text-pretty { text-wrap: pretty; }
 
@@ -124,6 +144,9 @@ h1, h2, h3, .font-display {
 @media print {
   header, footer, nav, .no-print { display: none !important; }
   body { background: #fff; }
+  .print-history [data-line] { transform: none !important; }
+  .print-history * { opacity: 1 !important; transform: none !important; clip-path: none !important; }
+  .print-history li { break-inside: avoid; }
 }
 
 @media (prefers-reduced-motion: reduce) {
