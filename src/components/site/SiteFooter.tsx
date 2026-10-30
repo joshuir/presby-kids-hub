@@ -13,6 +13,8 @@ export function SiteFooter() {
   const s = useSettings();
   const pathname = usePathname();
   if (pathname.startsWith("/admin")) return null;
+  // the Contact page already lists every way to reach us
+  const onContact = pathname.startsWith("/contact");
   const times = s.serviceTimes.map(parts);
   const socials = s.socials.map(parts).filter((x) => x[3]);
   const links = (s.footerLinks?.length ? s.footerLinks : ["Classes|/classes/", "Events|/events/", "Gallery|/gallery/", "Contact|/contact/"]).map(parts);
@@ -24,7 +26,7 @@ export function SiteFooter() {
       <span aria-hidden className="pointer-events-none absolute -bottom-40 right-0 h-80 w-80 rounded-full bg-sun/10 blur-3xl" />
       <Container className="relative">
         {/* visit card */}
-        <div id="visit" data-reveal="scale" className="relative scroll-mt-28 overflow-hidden rounded-[2rem] bg-blueBrand-600 px-6 py-8 text-white sm:px-10 sm:py-10">
+        <div id="visit" data-reveal="scale" className={`${onContact ? "hidden " : ""}relative scroll-mt-28 overflow-hidden rounded-[2rem] bg-blueBrand-600 px-6 py-8 text-white sm:px-10 sm:py-10`}>
           <span aria-hidden className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/10" />
           <span aria-hidden className="absolute -bottom-20 right-40 h-40 w-40 rounded-full bg-sun/30" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">

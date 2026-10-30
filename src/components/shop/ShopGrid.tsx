@@ -13,6 +13,7 @@ import { motionLevel, useMotionLevel } from "@/components/motion/MotionDirector"
 import { useSettings } from "@/lib/site";
 import { sized } from "@/lib/img";
 import { cn } from "@/lib/cn";
+import { Dropdown } from "@/components/ui/Dropdown";
 
 export function money(p: { price: number; currency: string }, qty = 1) {
   try {
@@ -443,15 +444,17 @@ function FilterPanel({ products, f, setF, cfgCurrency }: { products: ProductDoc[
   const colours = Array.from(new Map(products.flatMap((p) => p.colorways.map((c) => [c.name, c.hex] as const))).entries());
   const chip = (on: boolean) => cn("rounded-full px-3 py-1.5 text-sm font-bold ring-1 transition", on ? "bg-ink text-white ring-ink" : "bg-white ring-ink/15 hover:ring-ink/40");
   return (
-    <div className="grid gap-6">
-      <fieldset>
-        <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.16em] text-ink/50">Category</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {cats.map((c) => (
-            <button key={c} type="button" aria-pressed={f.cats.includes(c)} onClick={() => setF({ ...f, cats: toggle(f.cats, c) })} className={chip(f.cats.includes(c))}>{CATEGORY_LABEL[c] ?? c}</button>
-          ))}
-        </div>
-      </fieldset>
+    <div className="grid gap-5">
+      <Dropdown
+        label="Category"
+        testId="shop-category"
+        value={f.cats[0] ?? ""}
+        onChange={(v) => setF({ ...f, cats: v ? [v] : [] })}
+        options={[
+          { value: "", label: "All categories", count: products.length },
+          ...cats.map((c) => ({ value: c, label: CATEGORY_LABEL[c] ?? c, count: products.filter((p) => p.category === c).length })),
+        ]}
+      />
       <fieldset>
         <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.16em] text-ink/50">Size</legend>
         <div className="flex flex-wrap gap-1.5">
@@ -460,24 +463,26 @@ function FilterPanel({ products, f, setF, cfgCurrency }: { products: ProductDoc[
           ))}
         </div>
       </fieldset>
-      <fieldset>
-        <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.16em] text-ink/50">Colour</legend>
-        <div className="flex flex-wrap gap-2">
-          {colours.map(([name, hex]) => (
-            <button key={name} type="button" aria-pressed={f.colours.includes(name)} onClick={() => setF({ ...f, colours: toggle(f.colours, name) })} className={cn("inline-flex items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-sm font-semibold ring-1 transition", f.colours.includes(name) ? "ring-2 ring-ink" : "ring-ink/15 hover:ring-ink/40")}>
-              <span className="h-5 w-5 rounded-full ring-1 ring-black/10" style={{ background: hex }} aria-hidden /> {name}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-      <fieldset>
-        <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.16em] text-ink/50">Price ({cfgCurrency})</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {PRICE_BANDS.map((b) => (
-            <button key={b.id} type="button" aria-pressed={f.prices.includes(b.id)} onClick={() => setF({ ...f, prices: toggle(f.prices, b.id) })} className={chip(f.prices.includes(b.id))}>{b.label}</button>
-          ))}
-        </div>
-      </fieldset>
+      <Dropdown
+        label="Colour"
+        testId="shop-colour"
+        value={f.colours[0] ?? ""}
+        onChange={(v) => setF({ ...f, colours: v ? [v] : [] })}
+        options={[
+          { value: "", label: "All colours", count: products.length },
+          ...colours.map(([name, hex]) => ({ value: name, label: name, color: hex, count: products.filter((p) => p.colorways.some((c) => c.name === name)).length })),
+        ]}
+      />
+      <Dropdown
+        label={`Price (${cfgCurrency})`}
+        testId="shop-price"
+        value={f.prices[0] ?? ""}
+        onChange={(v) => setF({ ...f, prices: v ? [v] : [] })}
+        options={[
+          { value: "", label: "Any price", count: products.length },
+          ...PRICE_BANDS.map((b) => ({ value: b.id, label: b.label, count: products.filter((p) => b.test(p.price)).length })),
+        ]}
+      />
       <div className="grid gap-2">
         <label className="flex cursor-pointer items-center justify-between gap-3 text-sm font-bold">
           In stock only
@@ -596,15 +601,24 @@ export function ShopGrid({ products }: { products: ProductDoc[] }) {
             <button type="button" onClick={() => setSheet(true)} className="inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-extrabold ring-1 ring-ink/20 transition hover:bg-paper lg:hidden" aria-haspopup="dialog">
               <SlidersHorizontal className="h-4 w-4" aria-hidden /> Filters{nFilters ? ` (${nFilters})` : ""}
             </button>
-            <label className="sr-only" htmlFor="shop-sort">Sort by</label>
-            <select id="shop-sort" value={sort} onChange={(e) => setSort(e.target.value)} className="h-11 rounded-full bg-white px-4 text-sm font-bold ring-1 ring-ink/20">
-              <option value="featured">Featured</option>
-              <option value="new">Newest</option>
-              <option value="low">Price: low to high</option>
-              <option value="high">Price: high to low</option>
-              <option value="az">Name: A–Z</option>
-              <option value="stock">Most in stock</option>
-            </select>
+            <Dropdown
+              label="Sort by"
+              hideLabel
+              testId="shop-sort"
+              align="right"
+              className="w-44 shrink-0 sm:w-52"
+              buttonClassName="!min-h-11 !rounded-full !py-2 text-sm"
+              value={sort}
+              onChange={setSort}
+              options={[
+                { value: "featured", label: "Featured" },
+                { value: "new", label: "Newest" },
+                { value: "low", label: "Price: low to high" },
+                { value: "high", label: "Price: high to low" },
+                { value: "az", label: "Name: A–Z" },
+                { value: "stock", label: "Most in stock" },
+              ]}
+            />
             <button type="button" onClick={shuffle} className="inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-extrabold ring-1 ring-ink/20 transition hover:bg-ink hover:text-white" aria-label="Shuffle the products">
               <Shuffle className="h-4 w-4" aria-hidden /> <span className="hidden sm:inline">Shuffle</span>
             </button>

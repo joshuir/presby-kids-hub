@@ -1,52 +1,73 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import QRCode from "qrcode";
-import { Clock, Mail, MapPin, MessageCircle, Navigation, Phone } from "lucide-react";
+import { Suspense, useState } from "react";
+import { ArrowUpRight, Clock, Mail, MapPin, Navigation, Phone } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
 import { SupaForm } from "@/components/site/SupaForm";
 import { Faqs } from "@/components/blocks/Faqs";
-import { Socials } from "@/components/blocks/Socials";
-import { Newsletter } from "@/components/blocks/Newsletter";
+import { BrandGlyph, SocialBadge } from "@/components/site/Social";
 import { SectionHeading } from "@/components/ui/Reveal";
 import { parts, telLink, useSettings, waLink } from "@/lib/site";
 
 const input = "w-full rounded-2xl bg-paper px-4 py-3 outline-none ring-1 ring-ink/10 focus:bg-white focus:ring-2 focus:ring-blueBrand-500";
 
+/** Solid contact glyphs drawn like the real apps' icons. */
+function ContactIcon({ kind }: { kind: "call" | "whatsapp" | "email" | "visit" }) {
+  if (kind === "whatsapp")
+    return (
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#25D366] text-white shadow-[0_6px_14px_-6px_rgba(37,211,102,.7)]">
+        <BrandGlyph name="whatsapp" className="h-6 w-6" />
+      </span>
+    );
+  const map = {
+    call: ["bg-[#34C759]", "shadow-[0_6px_14px_-6px_rgba(52,199,89,.7)]", Phone],
+    email: ["bg-[#2563EB]", "shadow-[0_6px_14px_-6px_rgba(37,99,235,.7)]", Mail],
+    visit: ["bg-[#EA4335]", "shadow-[0_6px_14px_-6px_rgba(234,67,53,.7)]", MapPin],
+  } as const;
+  const [bg, sh, Icon] = map[kind];
+  return (
+    <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white ${bg} ${sh}`}>
+      <Icon className="h-6 w-6" fill={kind === "call" ? "currentColor" : "none"} strokeWidth={kind === "call" ? 0 : 2.2} aria-hidden />
+    </span>
+  );
+}
+
 export function ContactPage() {
   const s = useSettings();
-  const [qr, setQr] = useState("");
   const [len, setLen] = useState(0);
-  useEffect(() => {
-    QRCode.toDataURL(s.googlePlayUrl || location.origin, { margin: 1, width: 200 }).then(setQr).catch(() => {});
-  }, [s.googlePlayUrl]);
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.mapQuery || s.address)}`;
   const cards = [
-    { icon: Phone, label: "Call", value: s.phone, href: telLink(s.phone), tone: "bg-sky-soft text-blueBrand-700" },
-    { icon: MessageCircle, label: "WhatsApp", value: "Chat with us", href: waLink(s.whatsapp), tone: "bg-[#DCFCE7] text-[#15803D]" },
-    { icon: Mail, label: "Email", value: s.email, href: `mailto:${s.email}`, tone: "bg-sun-soft text-[#9A6400]" },
-    { icon: MapPin, label: "Visit", value: s.address.replace(/^Presbyterian Church, Accra, /, ""), href: directions, tone: "bg-[#FFE8E1] text-[#C2410C]" },
-  ];
+    { kind: "call" as const, label: "Call us", value: s.phone, action: "Call now", href: telLink(s.phone) },
+    { kind: "whatsapp" as const, label: "WhatsApp", value: s.whatsapp, action: "Start a chat", href: waLink(s.whatsapp, "Hello! I have a question about the Children's Ministry.") },
+    { kind: "email" as const, label: "Email", value: s.email, action: "Write an email", href: `mailto:${s.email}` },
+    { kind: "visit" as const, label: "Visit us", value: s.address.replace(/^Presbyterian Church, Accra, /, ""), action: "Get directions", href: directions },
+  ].filter((c) => c.value);
+  const socials = s.socials.map(parts).filter(([, , , url]) => url);
   return (
     <div>
-      <PageHero page="contact" eyebrow="Contact" title="We'd love to meet you" intro="A real person from our team will reply.">
-        <div className="flex flex-wrap gap-2">
-          <a href={telLink(s.phone)} className="btn btn-primary !py-2.5 text-sm"><Phone className="h-4 w-4" aria-hidden /> Call</a>
-          <a href={waLink(s.whatsapp)} target="_blank" rel="noreferrer" className="btn btn-ghost !py-2.5 text-sm"><MessageCircle className="h-4 w-4" aria-hidden /> WhatsApp</a>
-          <a href="#map" className="btn btn-ghost !py-2.5 text-sm"><MapPin className="h-4 w-4" aria-hidden /> Visit</a>
-        </div>
-      </PageHero>
+      <PageHero page="contact" eyebrow="Contact" title="We'd love to meet you" intro="Call, message or drop in on a Sunday — a real person from our team will reply." />
 
       <Container>
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {cards.map(({ icon: Icon, label, value, href, tone }) => (
-            <li key={label}>
-              <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer" className="card flex h-full items-center gap-4 p-5 transition hover:-translate-y-0.5">
-                <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${tone}`}><Icon className="h-6 w-6" aria-hidden /></span>
-                <span className="min-w-0">
-                  <span className="block font-display text-lg font-bold">{label}</span>
-                  <span className="block break-words text-sm text-ink/60">{value}</span>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ways to contact us">
+          {cards.map(({ kind, label, value, action, href }) => (
+            <li key={kind}>
+              <a
+                href={href}
+                target={href.startsWith("http") ? "_blank" : undefined}
+                rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+                className="card group flex h-full flex-col gap-4 p-5 transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blueBrand-500"
+                data-contact={kind}
+              >
+                <span className="flex items-center gap-3">
+                  <ContactIcon kind={kind} />
+                  <span className="min-w-0">
+                    <span className="block font-display text-lg font-bold">{label}</span>
+                    <span className="block break-words text-sm text-ink/60">{value}</span>
+                  </span>
+                </span>
+                <span className="mt-auto inline-flex items-center gap-1 text-sm font-extrabold text-blueBrand-700">
+                  {action} <ArrowUpRight className="h-4 w-4 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
                 </span>
               </a>
             </li>
@@ -54,14 +75,7 @@ export function ContactPage() {
         </ul>
       </Container>
 
-      <Container className="mt-20">
-        <div className="grid gap-8 [&>*]:min-w-0 lg:grid-cols-[1fr_1.6fr]">
-          <SectionHeading eyebrow="FAQs" title="Before you visit" intro="Quick answers to the questions we hear most." />
-          <Faqs askHref="" />
-        </div>
-      </Container>
-
-      <Container className="mt-20">
+      <Container className="mt-16">
         <div className="grid items-start gap-6 lg:grid-cols-[1.5fr_1fr]">
           <section className="card p-6 sm:p-8" aria-labelledby="form-title">
             <h2 id="form-title" className="scroll-mt-28 font-display text-3xl font-extrabold">Send us a message</h2>
@@ -100,35 +114,47 @@ export function ContactPage() {
               </ul>
               <p className="mt-3 text-sm text-white/60">First visit? Arrive 15 minutes early.</p>
             </div>
-            {qr && s.showApp !== "no" ? (
-              <div className="card flex items-center gap-4 p-5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qr} alt="QR code to download the app" width={88} height={88} className="rounded-xl" />
-                <div><div className="font-bold">Scan to download</div><div className="text-sm text-ink/55">Point your phone camera at the code.</div></div>
+            {socials.length ? (
+              <div className="card p-5">
+                <h2 className="font-display text-xl font-bold">Follow us</h2>
+                <ul className="mt-3 grid gap-1" aria-label="Social media">
+                  {socials.map(([network, handle, , url]) => (
+                    <li key={network}>
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-2xl p-2 transition hover:bg-paper" aria-label={`${network}: ${handle}`}>
+                        <SocialBadge network={network} size={40} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-bold">{network}</span>
+                          <span className="block truncate text-sm text-ink/55">{handle}</span>
+                        </span>
+                        <ArrowUpRight className="h-4 w-4 text-ink/40" aria-hidden />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
           </aside>
         </div>
       </Container>
 
-      <Container className="mt-20">
-        <SectionHeading eyebrow="Social" title="Find us on social" intro="Videos, photos and reminders." tone="coral" />
-        <div className="mt-6"><Socials /></div>
-      </Container>
-
-      <Container className="mt-20">
+      <Container className="mt-16">
         <section id="map" className="card scroll-mt-28 overflow-hidden lg:grid lg:grid-cols-[1fr_1.6fr]">
           <div className="p-6 sm:p-8">
             <span className="eyebrow bg-sky-soft text-blueBrand-700">Find us</span>
             <h2 className="mt-3 font-display text-3xl font-extrabold">{s.churchName}, Accra</h2>
             <p className="mt-2 text-ink/65">{s.address}</p>
-            <a href={directions} target="_blank" rel="noreferrer" className="btn btn-primary mt-6"><Navigation className="h-4 w-4" aria-hidden /> Get Directions</a>
+            <a href={directions} target="_blank" rel="noopener noreferrer" className="btn btn-primary mt-6"><Navigation className="h-4 w-4" aria-hidden /> Get directions</a>
           </div>
           <iframe title="Map to the church" loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="h-72 w-full lg:h-full" src={`https://www.google.com/maps?q=${encodeURIComponent(s.mapQuery || s.address)}&output=embed`} />
         </section>
       </Container>
 
-      <Newsletter />
+      <Container className="mt-16 pb-16">
+        <div className="grid gap-8 [&>*]:min-w-0 lg:grid-cols-[1fr_1.6fr]">
+          <SectionHeading eyebrow="FAQs" title="Before you visit" intro="Quick answers to the questions we hear most." />
+          <Faqs askHref="" />
+        </div>
+      </Container>
     </div>
   );
 }

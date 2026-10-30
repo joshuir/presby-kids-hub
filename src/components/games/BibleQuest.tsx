@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import gsap from "gsap";
-import { BookOpen, Check, Crown, Flame, Heart, Lock, Star, Trophy, X, Zap } from "lucide-react";
+import { BookOpen, Check, Crown, Flame, Gamepad2, Heart, Lock, Star, Trophy, X, Zap } from "lucide-react";
+import { Arcade } from "./Arcade";
 import { getLeaderboard, getPublic, submitScore as saveScore } from "@/lib/cms/client";
 import type { UnitDoc } from "@/lib/cms/types";
 import { cn } from "@/lib/cn";
@@ -63,7 +64,7 @@ function Setup({ mascots, initial, onDone, onCancel }: { mascots: GameMascot[]; 
         <div className="mt-6 flex justify-center">{m ? <Mascot emoji={m.emoji} color={color} accessory={acc} mood="wave" size={120} say={name ? `Hi ${name}! I'm ${m.name.split(" ")[0]}.` : `Hi there! I'm ${m.name.split(" ")[0]}.`} /> : null}</div>
         <label className="mt-6 grid gap-1.5 text-sm font-bold">
           Your name
-          <input aria-label="Your name" value={name} maxLength={20} onChange={(e) => setName(e.target.value.replace(/[<>]/g, ""))} placeholder="e.g. Kofi" className="h-12 rounded-2xl bg-paper px-4 text-base outline-none ring-1 ring-ink/10 focus:ring-2 focus:ring-blueBrand-500" />
+          <input aria-label="Your name" value={name} maxLength={20} onChange={(e) => setName(e.target.value.replace(/[<>]/g, ""))} placeholder="e.g. Kofi (or leave blank)" className="h-12 rounded-2xl bg-paper px-4 text-base outline-none ring-1 ring-ink/10 focus:ring-2 focus:ring-blueBrand-500" />
         </label>
         <div className="mt-5 text-sm font-bold">Mascot</div>
         <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -105,11 +106,14 @@ function Setup({ mascots, initial, onDone, onCancel }: { mascots: GameMascot[]; 
         <div className="mt-7 flex flex-wrap gap-3">
           <button
             type="button"
-            disabled={!name.trim() || !m}
             className="btn btn-primary"
-            onClick={() => onDone({ ...initial, name: name.trim(), mascotId: m!.id, mascotEmoji: m!.emoji, mascotColor: color, accessory: acc })}
+            onClick={() => {
+              const pick = m ?? mascots[0];
+              const nick = name.trim() || `${pick ? pick.name.split(" ")[0] : "Bible"} Explorer ${Math.floor(10 + Math.random() * 90)}`;
+              onDone({ ...initial, name: nick, mascotId: pick?.id ?? "", mascotEmoji: pick?.emoji ?? "🦁", mascotColor: color, accessory: acc });
+            }}
           >
-            Let’s play!
+            {initial.name ? "Save" : "Let’s play!"}
           </button>
           {onCancel ? <button type="button" onClick={onCancel} className="btn btn-ghost">Cancel</button> : null}
         </div>
@@ -472,7 +476,7 @@ function Results({ r, player, unit, kind, fresh, onContinue, onRetry }: { r: Les
 
 /* ------------------------------------------------------------------ main */
 
-type Tab = "learn" | "leaderboard" | "badges";
+type Tab = "learn" | "arcade" | "leaderboard" | "badges";
 
 export function BibleQuest() {
   const [questions, setQuestions] = useState<GameQuestion[] | null>(null);
@@ -524,9 +528,9 @@ export function BibleQuest() {
     }
   };
 
-  const start = (unit: UnitDoc, kind: NodeKind) => {
-    if (!questions || !player) return;
-    const qs = buildLesson(questions, unit, kind, new Set(player.seen));
+  const start = (unit: UnitDoc, kind: NodeKind, who: Player | null = player) => {
+    if (!questions || !who) return;
+    const qs = buildLesson(questions, unit, kind, new Set(who.seen));
     if (!qs.length) {
       setError("No questions in this unit yet — ask a teacher to add some in the CMS.");
       return;
@@ -572,6 +576,20 @@ export function BibleQuest() {
     setResult({ r, fresh });
   };
 
+  const playerRef = useRef(player);
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
+  const addXp = useCallback((xp: number) => {
+    const cur = playerRef.current;
+    if (!cur) return;
+    const p = { ...updateStreak(cur), xp: cur.xp + xp, roundsPlayed: cur.roundsPlayed + 1 };
+    playerRef.current = p;
+    persist(p);
+    submit(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const lv = useMemo(() => level(player?.xp ?? 0), [player?.xp]);
 
   if (!ready) return null;
@@ -583,9 +601,15 @@ export function BibleQuest() {
         initial={player ?? newPlayer()}
         onCancel={player ? () => setEditing(false) : undefined}
         onDone={(p) => {
+          const firstTime = !player;
           persist(p);
           setEditing(false);
           submit(p);
+          // first time: jump straight into the first lesson
+          if (firstTime && units.length) {
+            const node = pathState(units, p).flatMap((u) => (u.unlocked ? u.nodes.map((n) => ({ u: u.unit, n })) : [])).find((x) => x.n.state === "current");
+            if (node) start(node.u, node.n.kind, p);
+          }
         }}
       />
     ) : (
@@ -622,12 +646,13 @@ export function BibleQuest() {
             {(
               [
                 ["learn", "Learn", BookOpen],
+                ["arcade", "Arcade", Gamepad2],
                 ["leaderboard", "Leaderboard", Crown],
                 ["badges", "Badges", Trophy],
               ] as const
             ).map(([k, l, I]) => (
               <button key={k} type="button" role="tab" aria-label={l} aria-selected={tab === k} onClick={() => setTab(k)} className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-extrabold sm:px-4", tab === k ? "bg-ink text-white" : "text-ink/60")}>
-                <I className="h-4 w-4" aria-hidden /> <span className={k === "learn" ? "" : "hidden sm:inline"}>{l}</span>
+                <I className="h-4 w-4" aria-hidden /> <span className={k === "learn" || k === "arcade" ? "" : "hidden sm:inline"}>{l}</span>
               </button>
             ))}
           </div>
@@ -639,6 +664,8 @@ export function BibleQuest() {
         {error ? <p className="mb-4 rounded-2xl bg-[#FFDFE0] p-3 text-sm font-bold text-[#B91C1C]">{error}</p> : null}
 
         {tab === "learn" ? (questions ? <PathView units={units} player={player} onStart={start} /> : <p className="text-ink/55">Loading questions…</p>) : null}
+
+        {tab === "arcade" ? (questions ? <Arcade questions={questions} onXp={addXp} /> : <p className="text-ink/55">Loading games…</p>) : null}
 
         {tab === "leaderboard" ? (
           <div className="card p-4 sm:p-6">
