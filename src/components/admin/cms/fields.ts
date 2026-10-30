@@ -128,9 +128,8 @@ export const SCHEMAS: Record<Exclude<CollectionName, "leaderboard">, Field[]> = 
     { key: "appStoreUrl", label: "App — App Store link", type: "text" },
 
     { key: "_h_contact", label: "Contact, social & footer", type: "heading" },
-    { key: "socials", label: "Social channels (one per line: Network|Handle|Button|URL)", type: "lines", wide: true, help: "Network names that get their official icon: Facebook, Instagram, YouTube, TikTok, WhatsApp, X, LinkedIn, Spotify." },
     { key: "phone", label: "Phone", type: "text" },
-    { key: "whatsapp", label: "WhatsApp number", type: "text" },
+    { key: "whatsapp", label: "WhatsApp number", type: "text", help: "Social accounts are managed in Website → Social media." },
     { key: "email", label: "Email", type: "text" },
     { key: "address", label: "Address", type: "text", wide: true },
     { key: "mapQuery", label: "Google Maps search", type: "text", wide: true },

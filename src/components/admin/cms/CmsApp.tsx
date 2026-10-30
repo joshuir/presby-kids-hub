@@ -10,6 +10,7 @@ import { ToastProvider, useNotify } from "./ui";
 import { Dashboard } from "./Dashboard";
 import { ThemeEditor } from "./ThemeEditor";
 import { HeroLayoutEditor } from "./HeroLayoutEditor";
+import { SocialEditor } from "./SocialEditor";
 import { NavigationEditor } from "./NavigationEditor";
 import { FooterEditor } from "./FooterEditor";
 import { LayoutEditor } from "./LayoutEditor";
@@ -183,6 +184,7 @@ function Cms() {
           {tab === "theme" ? <ThemeEditor /> : null}
           {tab === "herolayout" ? <HeroLayoutEditor /> : null}
           {tab === "navigation" ? <NavigationEditor /> : null}
+          {tab === "social" ? <SocialEditor /> : null}
           {tab === "footer" ? <FooterEditor /> : null}
           {tab === "layouts" ? <LayoutEditor onEditBlock={(id) => go("blocks", { id })} onNewBlock={() => go("blocks", { isNew: true })} /> : null}
           {tab === "copy" ? <CopyEditor /> : null}

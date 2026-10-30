@@ -7,7 +7,7 @@ import { DEFAULT_MENU } from "@/lib/nav";
 import { ICON_NAMES, IconByName } from "@/lib/icons";
 import { adminList } from "@/lib/cms/client";
 import { cn } from "@/lib/cn";
-import { LivePreview } from "./LivePreview";
+import { EditorSplit } from "./EditorSplit";
 import { Btn, PageHeader, Panel, SaveBar, TextInput, Toggle, useNotify } from "./ui";
 import { useSiteSettings } from "./useSiteSettings";
 
@@ -76,7 +76,7 @@ export function NavigationEditor() {
   return (
     <div className="grid gap-5">
       <PageHeader title="Navigation" intro="The header menu, its dropdowns and the header button. Drag order with the arrows, hide items without deleting them, and link to any page — including custom pages." />
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,520px)_1fr]">
+      <EditorSplit path="/" settings={d} bar={<SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />}>
         <div className="grid gap-5">
           <Panel title="Header menu" actions={<Btn size="sm" onClick={() => { setMenu([...menu, { label: "New link", href: "/", icon: "Sparkles" }]); setOpen(menu.length); }}><Plus className="h-4 w-4" /> Add menu item</Btn>}>
             <ol className="grid gap-2" data-testid="menu-items">
@@ -158,11 +158,7 @@ export function NavigationEditor() {
             </div>
           </Panel>
         </div>
-        <div className="xl:sticky xl:top-20">
-          <LivePreview path="/" settings={d} height={560} />
-        </div>
-      </div>
-      <SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />
+      </EditorSplit>
     </div>
   );
 }

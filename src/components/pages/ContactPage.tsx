@@ -6,7 +6,9 @@ import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
 import { SupaForm } from "@/components/site/SupaForm";
 import { Faqs } from "@/components/blocks/Faqs";
-import { BrandGlyph, SocialBadge } from "@/components/site/Social";
+import { BrandGlyph } from "@/components/site/Social";
+import { Socials } from "@/components/blocks/Socials";
+import { cleanSocials } from "@/lib/socials";
 import { SectionHeading } from "@/components/ui/Reveal";
 import { parts, telLink, useCopy, useSettings, waLink } from "@/lib/site";
 import { PageLayout } from "@/components/site/PageLayout";
@@ -45,9 +47,9 @@ export function ContactPage() {
     { kind: "email" as const, label: t("contact.cards.email"), value: s.email, action: t("contact.cards.emailAction"), href: `mailto:${s.email}` },
     { kind: "visit" as const, label: t("contact.cards.visit"), value: s.address.replace(/^Presbyterian Church, Accra, /, ""), action: t("contact.cards.visitAction"), href: directions },
   ].filter((c) => c.value);
-  const socials = s.socials.map(parts).filter(([, , , url]) => url);
+  const hasSocials = cleanSocials(s.socials).length > 0;
   const sections: Record<string, React.ReactNode> = {
-    hero: <PageHero page="contact" eyebrow="Contact" title="We'd love to meet you" intro="Call, message or drop in on a Sunday — a real person from our team will reply." />,
+    hero: <PageHero page="contact" noCrumbs eyebrow="Contact" title="We'd love to meet you" intro="Call, message or drop in on a Sunday — a real person from our team will reply." />,
     cards: (
       <Container>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ways to contact us">
@@ -76,6 +78,20 @@ export function ContactPage() {
         </ul>
       </Container>
     ),
+    social: hasSocials ? (
+      <Container className="mt-16">
+        <section aria-labelledby="social-title" data-contact-social>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <span className="eyebrow bg-sky-soft text-blueBrand-700">{t("contact.social.eyebrow")}</span>
+              <h2 id="social-title" className="mt-3 font-display text-3xl font-extrabold">{t("contact.social.title")}</h2>
+              <p className="mt-1 max-w-xl text-ink/65">{t("contact.social.intro")}</p>
+            </div>
+          </div>
+          <Socials className="mt-6" />
+        </section>
+      </Container>
+    ) : null,
     form: (
       <Container className="mt-16">
         <div className="grid items-start gap-6 lg:grid-cols-[1.5fr_1fr]">
@@ -99,7 +115,7 @@ export function ContactPage() {
                   <textarea name="message" required rows={5} maxLength={2000} onChange={(e) => setLen(e.target.value.length)} className={input} />
                   <span className="text-right text-xs font-semibold text-ink/45">{len}/2000</span>
                 </label>
-                <p className="text-xs text-ink/50 sm:col-span-2">We use these details only to reply to you. <a className="underline" href="/privacy/">Privacy policy</a></p>
+                <p className="text-sm text-ink/70 sm:col-span-2">We use these details only to reply to you. Read our <a className="font-bold text-blueBrand-700 underline decoration-2 underline-offset-2 hover:text-blueBrand-800" href="/privacy/">privacy policy</a>.</p>
                 <div className="sm:col-span-2"><button className="btn btn-primary">{t("contact.form.button")}</button></div>
               </SupaForm>
             </Suspense>
@@ -116,25 +132,6 @@ export function ContactPage() {
               </ul>
               <p className="mt-3 text-sm text-white/60">{t("contact.times.note")}</p>
             </div>
-            {socials.length ? (
-              <div className="card p-5">
-                <h2 className="font-display text-xl font-bold">{t("contact.social.title")}</h2>
-                <ul className="mt-3 grid gap-1" aria-label="Social media">
-                  {socials.map(([network, handle, , url]) => (
-                    <li key={network}>
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-2xl p-2 transition hover:bg-paper" aria-label={`${network}: ${handle}`}>
-                        <SocialBadge network={network} size={40} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-bold">{network}</span>
-                          <span className="block truncate text-sm text-ink/55">{handle}</span>
-                        </span>
-                        <ArrowUpRight className="h-4 w-4 text-ink/40" aria-hidden />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </aside>
         </div>
       </Container>

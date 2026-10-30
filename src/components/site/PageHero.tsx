@@ -82,6 +82,7 @@ export function PageHero({
   intro,
   children,
   crumb,
+  noCrumbs,
   className,
   image,
 }: {
@@ -94,6 +95,8 @@ export function PageHero({
   children?: React.ReactNode;
   /** extra breadcrumb (e.g. the class or album name) */
   crumb?: string;
+  /** leave out the breadcrumb trail */
+  noCrumbs?: boolean;
   className?: string;
   /** @deprecated kept for older callers */
   art?: React.ReactNode;
@@ -162,7 +165,7 @@ export function PageHero({
     </h1>
   );
 
-  const Crumbs = crumbs.length ? (
+  const Crumbs = crumbs.length && !noCrumbs ? (
     <nav aria-label="Breadcrumb" data-ph style={ix(0)} className={cn("mb-5 flex flex-wrap items-center gap-1 text-sm font-bold", style === "photo" ? "text-white/80" : "text-ink/50")}>
       <Link href="/" className="inline-flex items-center gap-1 rounded-full px-1 hover:text-blueBrand-600">
         <Home className="h-3.5 w-3.5" aria-hidden /> Home

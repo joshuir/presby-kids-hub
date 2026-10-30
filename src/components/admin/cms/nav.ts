@@ -1,11 +1,11 @@
 import {
   Blocks, CalendarDays, FileText, FolderOpen, GraduationCap, HelpCircle, History, Image as ImageIcon, Images, Inbox, KeyRound, LayoutDashboard,
-  LayoutTemplate, ListOrdered, Map, Move, MessageSquare, Navigation, Newspaper, Palette, PanelBottom, PanelTop, Receipt, Settings, Shirt, Smile, Trophy,
+  LayoutTemplate, ListOrdered, Map, Move, MessageSquare, Navigation, Newspaper, Palette, PanelBottom, PanelTop, Receipt, Settings, Share2, Shirt, Smile, Trophy,
   Type, Users, UserCog, type LucideIcon,
 } from "lucide-react";
 
 export type CmsTab =
-  | "dashboard" | "theme" | "herolayout" | "navigation" | "footer" | "layouts" | "copy" | "settings" | "heroes" | "custompages" | "blocks"
+  | "dashboard" | "theme" | "herolayout" | "navigation" | "social" | "footer" | "layouts" | "copy" | "settings" | "heroes" | "custompages" | "blocks"
   | "posts" | "events" | "gallery" | "classes" | "lessons" | "teachers" | "faqs" | "milestones"
   | "units" | "questions" | "mascots" | "leaderboard" | "products" | "orders"
   | "messages" | "comments" | "media" | "team" | "account";
@@ -17,6 +17,7 @@ export const TABS: TabDef[] = [
 
   { key: "theme", label: "Theme & fonts", icon: Palette, group: "Website", perm: "pages", keywords: "colours colors fonts logo brand buttons corners design style" },
   { key: "navigation", label: "Navigation", icon: Navigation, group: "Website", perm: "pages", keywords: "menu header dropdown links button cta" },
+  { key: "social", label: "Social media", icon: Share2, group: "Website", perm: "pages", keywords: "whatsapp instagram facebook youtube tiktok x twitter linkedin telegram socials icons follow links" },
   { key: "footer", label: "Footer", icon: PanelBottom, group: "Website", perm: "pages", keywords: "footer links social icons wordmark hover animation" },
   { key: "layouts", label: "Page layouts", icon: LayoutTemplate, group: "Website", perm: "pages", keywords: "sections order hide rearrange home page" },
   { key: "herolayout", label: "Home hero layout", icon: Move, group: "Website", perm: "pages", keywords: "hero drag move resize position image picture headline visual editor" },

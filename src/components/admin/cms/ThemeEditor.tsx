@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { FONTS, THEME_DEFAULTS, THEME_PRESETS, fontPreviewHref } from "@/lib/theme";
 import { cn } from "@/lib/cn";
 import { FieldEditor } from "./FieldEditor";
-import { LivePreview } from "./LivePreview";
+import { EditorSplit } from "./EditorSplit";
 import { ColorInput, PageHeader, Panel, SaveBar, Segmented, useNotify } from "./ui";
 import { useSiteSettings } from "./useSiteSettings";
 
@@ -44,7 +44,7 @@ export function ThemeEditor() {
   return (
     <div className="grid gap-5">
       <PageHeader title="Theme & fonts" intro="Colours, fonts, corners and buttons for the whole website. The preview updates as you change things; visitors see it when you save." />
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,460px)_1fr]">
+      <EditorSplit path="/" settings={d} bar={<SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />}>
         <div className="grid gap-5">
           <Panel title="Colour presets" intro="Start from a palette, then fine-tune below.">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -111,12 +111,7 @@ export function ThemeEditor() {
 
           <button type="button" onClick={() => st.patch({ ...THEME_DEFAULTS, logoUrl: "" } as never)} className="justify-self-start text-sm font-semibold text-slate-500 underline-offset-4 hover:underline">Reset to the original theme</button>
         </div>
-
-        <div className="xl:sticky xl:top-20">
-          <LivePreview path="/" settings={d} height={720} />
-        </div>
-      </div>
-      <SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />
+      </EditorSplit>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { RotateCcw, Search } from "lucide-react";
 import { COPY, COPY_PAGES, type CopyEntry } from "@/lib/copy";
 import { cn } from "@/lib/cn";
 import { FieldEditor } from "./FieldEditor";
-import { LivePreview } from "./LivePreview";
+import { EditorSplit } from "./EditorSplit";
 import { LinkInput, useSitePages } from "./NavigationEditor";
 import { PageHeader, Panel, SaveBar, useNotify } from "./ui";
 import { useSiteSettings } from "./useSiteSettings";
@@ -34,7 +34,7 @@ export function CopyEditor() {
   return (
     <div className="grid gap-5">
       <PageHeader title="Site text & images" intro="Every heading, button, label and fixed picture on the website that isn't part of a content list. Leave a box empty to use the original wording." />
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,560px)_1fr]">
+      <EditorSplit path={PREVIEW_PATH[term ? "Home" : group] ?? "/"} settings={d} bar={<SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />}>
         <div className="grid gap-4">
           <Panel>
             <div className="relative">
@@ -77,11 +77,7 @@ export function CopyEditor() {
           </Panel>
           <p className="text-xs text-slate-500">Page heroes, the home hero, welcome text, stats, service times, contact details and policy pages are in <b>Site settings</b> and <b>Page heroes</b>. Lists such as classes, events and FAQs have their own sections.</p>
         </div>
-        <div className="xl:sticky xl:top-20">
-          <LivePreview path={PREVIEW_PATH[term ? "Home" : group] ?? "/"} settings={d} height={720} />
-        </div>
-      </div>
-      <SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />
+      </EditorSplit>
     </div>
   );
 }

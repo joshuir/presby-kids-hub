@@ -6,7 +6,7 @@ import type { LayoutItem } from "@/lib/cms/types";
 import { PAGE_SECTIONS, resolveLayout } from "@/lib/layout";
 import { adminList } from "@/lib/cms/client";
 import { cn } from "@/lib/cn";
-import { LivePreview } from "./LivePreview";
+import { EditorSplit } from "./EditorSplit";
 import { Btn, PageHeader, Panel, SaveBar, useNotify } from "./ui";
 import { useSiteSettings } from "./useSiteSettings";
 
@@ -45,7 +45,7 @@ export function LayoutEditor({ onEditBlock, onNewBlock }: { onEditBlock: (id: st
   return (
     <div className="grid gap-5">
       <PageHeader title="Page layouts" intro="Choose which sections appear on each page and in what order. Add your own blocks (text, images, videos, banners, cards, maps, social posts…) anywhere between them." />
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,480px)_1fr]">
+      <EditorSplit path={PAGE_SECTIONS[page].path} settings={d} bar={<SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />}>
         <div className="grid gap-5">
           <Panel>
             <label className="block">
@@ -110,11 +110,7 @@ export function LayoutEditor({ onEditBlock, onNewBlock }: { onEditBlock: (id: st
             <button type="button" onClick={() => write([])} className="mt-3 text-xs font-semibold text-slate-500 underline-offset-4 hover:underline">Reset this page to its default layout</button>
           </Panel>
         </div>
-        <div className="xl:sticky xl:top-20">
-          <LivePreview path={PAGE_SECTIONS[page].path} settings={d} height={720} />
-        </div>
-      </div>
-      <SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />
+      </EditorSplit>
     </div>
   );
 }

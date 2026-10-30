@@ -1,11 +1,11 @@
-import { Link2 } from "lucide-react";
+import { Globe, Link2, Mail } from "lucide-react";
 import type { ComponentType } from "react";
 import { BRAND } from "./brandIcons";
 
 type IconProps = { className?: string; "aria-hidden"?: boolean | "true" };
 type IconCmp = ComponentType<IconProps>;
 
-const ALIAS: Record<string, string> = { twitter: "x", "x (twitter)": "x", fb: "facebook", ig: "instagram", yt: "youtube", wa: "whatsapp" };
+import { networkKey } from "@/lib/socials";
 
 /** Brand backgrounds — Instagram uses its real gradient. */
 export const BRAND_BG: Record<string, string> = {
@@ -19,16 +19,20 @@ export const BRAND_BG: Record<string, string> = {
   threads: "#000000",
   spotify: "#1DB954",
   telegram: "#26A5E4",
+  email: "#EA580C",
+  website: "#2563EB",
 };
 
 export function brandKey(network: string) {
-  const k = network.trim().toLowerCase();
-  return ALIAS[k] ?? k;
+  return networkKey(network);
 }
 
 export function BrandGlyph({ name, className }: { name: string; className?: string }) {
-  const b = BRAND[brandKey(name)];
-  if (!b) return <Link2 className={className} aria-hidden />;
+  const k = brandKey(name);
+  const b = BRAND[k];
+  if (k === "email") return <Mail className={className} strokeWidth={2.4} aria-hidden />;
+  if (k === "website") return <Globe className={className} strokeWidth={2.4} aria-hidden />;
+  if (!b) return <Link2 className={className} strokeWidth={2.4} aria-hidden />;
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden fill="currentColor">
       <path d={b.path} />

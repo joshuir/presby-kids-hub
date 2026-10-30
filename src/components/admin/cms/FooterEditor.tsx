@@ -2,11 +2,9 @@
 
 import { FONTS } from "@/lib/theme";
 import { COPY } from "@/lib/copy";
-import { LivePreview } from "./LivePreview";
-import { ColorInput, PageHeader, Panel, RowsEditor, SaveBar, Segmented, SelectInput, TextInput, Toggle, useNotify } from "./ui";
+import { EditorSplit } from "./EditorSplit";
+import { Btn, ColorInput, PageHeader, Panel, RowsEditor, SaveBar, Segmented, SelectInput, TextInput, Toggle, useNotify } from "./ui";
 import { useSiteSettings } from "./useSiteSettings";
-
-const NETWORKS = ["Facebook", "Instagram", "YouTube", "TikTok", "X", "WhatsApp", "LinkedIn", "Threads", "Telegram", "Spotify"];
 
 export function FooterEditor() {
   const notify = useNotify();
@@ -20,7 +18,7 @@ export function FooterEditor() {
   return (
     <div className="grid gap-5">
       <PageHeader title="Footer" intro="Colours, hover animations, the big wordmark, links, social icons and the visit banner at the bottom of every page." />
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,520px)_1fr]">
+      <EditorSplit path="/events/" settings={d} note={<>Scroll to the bottom of the preview to see the footer. Hover the links and the wordmark to try the animations.</>} bar={<SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />}>
         <div className="grid gap-5">
           <Panel title="Colours & hover animation">
             <div className="grid gap-3 sm:grid-cols-3">
@@ -83,23 +81,11 @@ export function FooterEditor() {
             </div>
           </Panel>
 
-          <Panel title="Social media icons" intro="Shown in the footer, on the Contact page and in the Social sections. The real logo is used for each network.">
-            <RowsEditor
-              label="Accounts"
-              value={(d.socials as string[]) ?? []}
-              onChange={(v) => st.set("socials", v)}
-              cols={[{ key: "net", label: "Network", options: NETWORKS, width: "w-32" }, { key: "handle", label: "Handle / name" }, { key: "cta", label: "Button text", placeholder: "Follow" }, { key: "url", label: "Link", placeholder: "https://…" }]}
-              addLabel="Add social account"
-              testId="socials-rows"
-            />
+          <Panel title="Social media icons" intro="The footer shows an icon for every social account. Add, edit or remove accounts in Social media.">
+            <Btn size="sm" onClick={() => (location.hash = "social")} data-testid="go-social">Manage social media</Btn>
           </Panel>
         </div>
-        <div className="xl:sticky xl:top-20">
-          <LivePreview path="/events/" settings={d} height={720} />
-          <p className="mt-2 text-xs text-slate-500">Scroll to the bottom of the preview to see the footer. Hover the links and the wordmark to try the animations.</p>
-        </div>
-      </div>
-      <SaveBar dirty={st.dirty} saving={st.saving} onSave={st.save} onDiscard={st.discard} />
+      </EditorSplit>
     </div>
   );
 }

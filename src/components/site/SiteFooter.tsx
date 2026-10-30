@@ -9,6 +9,7 @@ import { ArrowUp, ArrowUpRight, Clock, Mail, MapPin, Phone } from "lucide-react"
 import { Container } from "./Container";
 import { Logo } from "./Logo";
 import { SocialBadge } from "./Social";
+import { cleanSocials } from "@/lib/socials";
 import { parts, telLink, useCopy, useSettings, waLink } from "@/lib/site";
 import { cn } from "@/lib/cn";
 import { FONTS } from "@/lib/theme";
@@ -102,7 +103,7 @@ export function SiteFooter() {
   if (pathname.startsWith("/admin")) return null;
   const onContact = pathname.startsWith("/contact");
   const times = s.serviceTimes.map(parts);
-  const socials = s.socials.map(parts).filter((x) => x[3]);
+  const socials = cleanSocials(s.socials);
   const links = (s.footerLinks?.length ? s.footerLinks : ["Classes|/classes/", "Events|/events/", "Gallery|/gallery/", "Contact|/contact/"]).map(parts).filter(([l]) => l);
   const legal = (s.legalLinks?.length ? s.legalLinks : ["Safeguarding|/safeguarding/", "Privacy|/privacy/", "Terms|/terms/", "Accessibility|/accessibility/"]).map(parts).filter(([l]) => l);
   const bg = col(s.footerBg, "var(--color-ink)");
@@ -155,10 +156,10 @@ export function SiteFooter() {
             <p className="mt-4 max-w-xs text-sm leading-6 opacity-65">{s.footerTagline || s.footerBlurb}</p>
             {socials.length ? (
               <ul className="mt-5 flex flex-wrap gap-2" aria-label="Social media">
-                {socials.map(([network, handle, , url]) => (
-                  <li key={network}>
-                    <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`${network} — ${handle}`} className="cm-ft-social block rounded-full">
-                      <SocialBadge network={network} size={42} />
+                {socials.map(({ network, key, handle, url, external }, i) => (
+                  <li key={key + i}>
+                    <a href={url} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} title={network} data-social={key} aria-label={`${network}${handle ? ` — ${handle}` : ""}`} className="cm-ft-social block rounded-full ring-2 ring-white/15">
+                      <SocialBadge network={key} size={44} />
                     </a>
                   </li>
                 ))}

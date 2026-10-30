@@ -47,7 +47,7 @@ export const PAGE_SECTIONS: Record<string, { label: string; path: string; sectio
   contact: {
     label: "Contact",
     path: "/contact/",
-    sections: [{ id: "hero", label: "Page hero" }, { id: "cards", label: "Call / WhatsApp / Email / Visit cards" }, { id: "form", label: "Message form, service times & socials" }, { id: "map", label: "Map" }, { id: "faqs", label: "FAQs" }],
+    sections: [{ id: "hero", label: "Page hero" }, { id: "cards", label: "Call / WhatsApp / Email / Visit cards" }, { id: "social", label: "Social media (Follow us)" }, { id: "form", label: "Message form & service times" }, { id: "map", label: "Map" }, { id: "faqs", label: "FAQs" }],
   },
 };
 
