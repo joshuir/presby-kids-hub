@@ -3,13 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { rpc, supa, whoami, type WhoAmI } from "@/lib/cms/client";
+import { loginEmail, loginLabel, rpc, supa, whoami, type WhoAmI } from "@/lib/cms/client";
 
 export type AdminSession = {
   role: "owner" | "subadmin";
   id: string;
   name: string;
-  username: string; // email
+  /** what they sign in with: a username for sub-admins, an email for the main admin */
+  username: string;
   permissions: string[];
 };
 
@@ -22,11 +23,11 @@ export const useAdmin = () => useContext(AdminCtx);
 const input = "rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm";
 
 /**
- * CMS sign-in (Supabase Auth: email + password).
- *  - First time: create an account, confirm the email, then enter the one-time setup code
- *    to become the main admin.
- *  - Sub-admins: the main admin adds their email in the CMS; they create an account with
- *    that same email and can then edit only the sections they were given.
+ * CMS sign-in.
+ *  - Sub-admins: sign in with the username and password the main admin set for them
+ *    (CMS → Sub-admins). No email or sign-up needed.
+ *  - Main admin: signs in with their email. The very first time, they create an account,
+ *    confirm the email and enter the one-time setup code.
  */
 export function AdminGate({ children }: { children: React.ReactNode; requiredRoles?: string[] }) {
   const [state, setState] = useState<"loading" | "out" | "in">("loading");
@@ -110,12 +111,14 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
     return shell(
       <>
         <div className="font-display text-2xl">
-          {mode === "signin" ? "Admin sign in" : mode === "signup" ? "Create your admin account" : "Reset your password"}
+          {mode === "signin" ? "Staff sign in" : mode === "signup" ? "Set up the main admin account" : "Reset your password"}
         </div>
         <p className="mt-2 text-sm text-black/70">
           {mode === "signup"
-            ? "Use the email address the main admin added for you (or, for the very first setup, your own email)."
-            : "Content manager for classes, lessons, games and the collection."}
+            ? "Only for the very first setup of the website. Sub-admins don’t need this — the main admin creates your username and password."
+            : mode === "reset"
+              ? "Main admin: enter your email for a reset link. Sub-admins: ask the main admin for a new password."
+              : "Sign in with the username and password you were given (the main admin can use their email)."}
         </p>
         <form
           className="mt-5 grid gap-3"
@@ -127,7 +130,7 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
             const redirect = `${window.location.origin}/admin/`;
             try {
               if (mode === "signin") {
-                const { error } = await auth.signInWithPassword({ email, password });
+                const { error } = await auth.signInWithPassword({ email: loginEmail(email), password });
                 if (error) throw error;
                 setPassword("");
                 await check();
@@ -140,6 +143,10 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
                   setMode("signin");
                 }
               } else {
+                if (!email.includes("@")) {
+                  setMsg({ text: "Sub-admin passwords are reset by the main admin — ask them to set a new one for you in the CMS.", tone: "ok" });
+                  return;
+                }
                 const { error } = await auth.resetPasswordForEmail(email, { redirectTo: redirect });
                 if (error) throw error;
                 setMsg({ text: "If that email has an account, a reset link is on its way.", tone: "ok" });
@@ -148,7 +155,13 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
             } catch (x) {
               const m = (x as Error).message;
               setMsg({
-                text: /confirm/i.test(m) ? "Please confirm your email first — check your inbox for the link." : /invalid login/i.test(m) ? "Incorrect email or password." : m,
+                text: /banned/i.test(m)
+                  ? "This account has been deactivated. Ask the main admin to switch it back on."
+                  : /confirm/i.test(m)
+                    ? "Please confirm your email first — check your inbox for the link."
+                    : /invalid login|invalid.*(email|credentials)/i.test(m)
+                      ? "Incorrect username or password."
+                      : m,
                 tone: "err",
               });
             } finally {
@@ -157,8 +170,20 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
           }}
         >
           <label className="grid gap-1 text-sm">
-            <span className="font-semibold">Email</span>
-            <input className={input} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            <span className="font-semibold">{mode === "signup" ? "Email" : "Username"}</span>
+            <input
+              className={input}
+              type={mode === "signup" ? "email" : "text"}
+              name="username"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete={mode === "signup" ? "email" : "username"}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder={mode === "signup" ? "you@example.org" : mode === "reset" ? "Your email (main admin)" : "e.g. kofi.mensah"}
+            />
           </label>
           {mode !== "reset" ? (
             <label className="grid gap-1 text-sm">
@@ -183,7 +208,7 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
         </form>
         <div className="mt-5 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {mode !== "signin" ? <Link onClick={() => { setMode("signin"); setMsg(null); }}>Back to sign in</Link> : null}
-          {mode !== "signup" ? <Link onClick={() => { setMode("signup"); setMsg(null); }}>Create an account</Link> : null}
+          {mode !== "signup" ? <Link onClick={() => { setMode("signup"); setMsg(null); }}>First-time setup</Link> : null}
           {mode !== "reset" ? <Link onClick={() => { setMode("reset"); setMsg(null); }}>Forgot password?</Link> : null}
         </div>
       </>,
@@ -210,7 +235,7 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
       >
         <div className="font-display text-2xl">Choose your own password</div>
         <p className="text-sm text-black/70">
-          You signed in as <b>{who.email}</b> with a temporary password. Pick a new one (10+ characters) to continue.
+          You signed in as <b>{loginLabel(who.email ?? "")}</b> with a temporary password. Pick a new one (10+ characters) to continue.
         </p>
         <input className={input} type="password" minLength={10} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="New password" autoComplete="new-password" />
         {msg ? <Msg {...msg} /> : null}
@@ -256,8 +281,8 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
       <>
         <div className="font-display text-2xl">No admin access yet</div>
         <p className="mt-2 text-sm text-black/70">
-          You’re signed in as <b>{who.email}</b>, but this email hasn’t been given access (or access was turned off).
-          Ask the main admin to add this exact email in <b>CMS → Sub-admins</b>, then reload this page.
+          You’re signed in as <b>{loginLabel(who.email ?? "")}</b>, but this account doesn’t have access (or it was switched off).
+          Ask the main admin to check your account in <b>CMS → Sub-admins</b>, then reload this page.
         </p>
         <div className="mt-4 flex gap-2">
           <Button type="button" onClick={check}>Check again</Button>
@@ -269,7 +294,7 @@ export function AdminGate({ children }: { children: React.ReactNode; requiredRol
 
   const session: AdminSession | null =
     who && who.admin
-      ? { role: who.role, id: who.email, name: who.name, username: who.email, permissions: who.permissions }
+      ? { role: who.role, id: who.email, name: who.name, username: loginLabel(who.email), permissions: who.permissions }
       : null;
   return <AdminCtx.Provider value={{ signOut, session }}>{children}</AdminCtx.Provider>;
 }

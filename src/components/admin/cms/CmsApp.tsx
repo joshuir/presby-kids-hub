@@ -194,7 +194,7 @@ function Cms() {
           {tab === "messages" ? <><PageHeader title="Messages" intro="Contact messages, registrations and newsletter sign-ups from the website." /><div className="mt-5"><MessagesPanel notify={notify} /></div></> : null}
           {tab === "comments" ? <><PageHeader title="Comments" intro="Approve, reply to or remove comments on blog posts." /><div className="mt-5"><CommentsPanel notify={notify} /></div></> : null}
           {tab === "orders" ? <><PageHeader title="Orders" intro="Clothing orders, payments, delivery and collection." /><div className="mt-5"><OrdersPanel notify={notify} /></div></> : null}
-          {tab === "team" ? <><PageHeader title="Sub-admins" intro="Invite people to help run the website and choose what they can manage." /><div className="mt-5"><SubAdminsPanel notify={notify} /></div></> : null}
+          {tab === "team" ? <><PageHeader title="Sub-admins" intro="Create sign-ins for the people who help run the website, choose what each can manage, reset passwords and switch accounts off." /><div className="mt-5"><SubAdminsPanel notify={notify} /></div></> : null}
           {tab === "account" ? <><PageHeader title="My account" /><div className="mt-5"><AccountPanel notify={notify} name={session?.name ?? ""} email={session?.username ?? ""} /></div></> : null}
         </main>
       </div>

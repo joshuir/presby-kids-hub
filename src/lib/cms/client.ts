@@ -356,3 +356,36 @@ export async function verifyPayment(body: { ref: string; provider: "paystack" | 
   if (!r.ok) throw new Error(j.error === "not_configured" ? "Online payments aren't switched on yet — the ministry will contact you." : j.error || "Payment could not be confirmed");
   return j.order as Order;
 }
+
+// ---------------- sub-admin logins ----------------
+
+/** Sub-admins sign in with a username; their login address is private and never receives email. */
+export const STAFF_DOMAIN = "staff.cm.invalid";
+export const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
+/** What someone typed on the sign-in screen → the address the login service uses. */
+export const loginEmail = (id: string) => {
+  const v = id.trim().toLowerCase();
+  return v.includes("@") ? v : `${v}@${STAFF_DOMAIN}`;
+};
+/** Login address → what to show people (the username for sub-admins). */
+export const loginLabel = (email: string) => (email ?? "").replace(new RegExp(`@${STAFF_DOMAIN.replace(/\./g, "\\.")}$`), "");
+
+export type StaffAction =
+  | { action: "create"; username: string; name: string; password: string; permissions: string[]; mustChange?: boolean }
+  | { action: "update"; email: string; username: string; name: string; permissions: string[]; active: boolean; password?: string; mustChange?: boolean }
+  | { action: "delete"; email: string };
+
+/** Main admin only: create / edit / reset / deactivate / remove a sub-admin's login. */
+export async function staffAction(body: StaffAction): Promise<{ ok: true; email?: string }> {
+  const { data: s } = await supa().auth.getSession();
+  const token = s.session?.access_token;
+  if (!token) throw new Error("Please sign in again.");
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/cm-staff`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  const j = (await r.json().catch(() => ({}))) as { ok?: boolean; email?: string; error?: string };
+  if (!r.ok || !j.ok) throw new Error(j.error || "Couldn’t save — please try again.");
+  return { ok: true, email: j.email };
+}
