@@ -248,6 +248,8 @@ export type SiteSettingsDoc = BaseDoc & {
   /** type | fade | static */
   heroWordsEffect?: string;
   heroWordsSpeed?: number;
+  /** desktop placement of every hero element (see lib/heroLayout.ts) */
+  heroLayout?: Record<string, { x: number; y: number; w?: number; s?: number; z?: number; hidden?: boolean }>;
   /* ---- structure ---- */
   menu?: MenuItem[];
   ctaUrl?: string;

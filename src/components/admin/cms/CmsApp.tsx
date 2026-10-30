@@ -9,6 +9,7 @@ import { TABS, type CmsTab } from "./nav";
 import { ToastProvider, useNotify } from "./ui";
 import { Dashboard } from "./Dashboard";
 import { ThemeEditor } from "./ThemeEditor";
+import { HeroLayoutEditor } from "./HeroLayoutEditor";
 import { NavigationEditor } from "./NavigationEditor";
 import { FooterEditor } from "./FooterEditor";
 import { LayoutEditor } from "./LayoutEditor";
@@ -180,6 +181,7 @@ function Cms() {
         <main className="mx-auto max-w-[1600px] p-3 sm:p-5 lg:p-7" data-cms-tab={tab}>
           {tab === "dashboard" ? <Dashboard name={session?.name ?? ""} go={go} allowed={allowed} /> : null}
           {tab === "theme" ? <ThemeEditor /> : null}
+          {tab === "herolayout" ? <HeroLayoutEditor /> : null}
           {tab === "navigation" ? <NavigationEditor /> : null}
           {tab === "footer" ? <FooterEditor /> : null}
           {tab === "layouts" ? <LayoutEditor onEditBlock={(id) => go("blocks", { id })} onNewBlock={() => go("blocks", { isNew: true })} /> : null}

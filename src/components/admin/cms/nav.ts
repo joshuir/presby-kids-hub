@@ -1,11 +1,11 @@
 import {
   Blocks, CalendarDays, FileText, FolderOpen, GraduationCap, HelpCircle, History, Image as ImageIcon, Images, Inbox, KeyRound, LayoutDashboard,
-  LayoutTemplate, ListOrdered, Map, MessageSquare, Navigation, Newspaper, Palette, PanelBottom, PanelTop, Receipt, Settings, Shirt, Smile, Trophy,
+  LayoutTemplate, ListOrdered, Map, Move, MessageSquare, Navigation, Newspaper, Palette, PanelBottom, PanelTop, Receipt, Settings, Shirt, Smile, Trophy,
   Type, Users, UserCog, type LucideIcon,
 } from "lucide-react";
 
 export type CmsTab =
-  | "dashboard" | "theme" | "navigation" | "footer" | "layouts" | "copy" | "settings" | "heroes" | "custompages" | "blocks"
+  | "dashboard" | "theme" | "herolayout" | "navigation" | "footer" | "layouts" | "copy" | "settings" | "heroes" | "custompages" | "blocks"
   | "posts" | "events" | "gallery" | "classes" | "lessons" | "teachers" | "faqs" | "milestones"
   | "units" | "questions" | "mascots" | "leaderboard" | "products" | "orders"
   | "messages" | "comments" | "media" | "team" | "account";
@@ -19,6 +19,7 @@ export const TABS: TabDef[] = [
   { key: "navigation", label: "Navigation", icon: Navigation, group: "Website", perm: "pages", keywords: "menu header dropdown links button cta" },
   { key: "footer", label: "Footer", icon: PanelBottom, group: "Website", perm: "pages", keywords: "footer links social icons wordmark hover animation" },
   { key: "layouts", label: "Page layouts", icon: LayoutTemplate, group: "Website", perm: "pages", keywords: "sections order hide rearrange home page" },
+  { key: "herolayout", label: "Home hero layout", icon: Move, group: "Website", perm: "pages", keywords: "hero drag move resize position image picture headline visual editor" },
   { key: "custompages", label: "Custom pages", icon: FileText, group: "Website", perm: "pages", keywords: "new page subpage" },
   { key: "blocks", label: "Blocks", icon: Blocks, group: "Website", perm: "pages", keywords: "sections banner cards video embed map cta" },
   { key: "heroes", label: "Page heroes", icon: PanelTop, group: "Website", perm: "pages", keywords: "banner heading top of page" },
