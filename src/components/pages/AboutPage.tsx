@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Eye, Heart, Sparkles, Star, Sun } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
@@ -8,7 +8,10 @@ import { Reveal } from "@/components/ui/Reveal";
 import { TeamRoster } from "@/components/blocks/TeamRoster";
 import { AppPromo } from "@/components/blocks/AppPromo";
 import { HistorySection } from "@/components/history/HistoryPage";
-import { parts, useSettings } from "@/lib/site";
+import { parts, useCopy, useSettings } from "@/lib/site";
+import { useContent } from "@/lib/useContent";
+import { resolveLayout } from "@/lib/layout";
+import { ContentBlock } from "@/components/blocks/ContentBlock";
 
 type SectionId = "about-us" | "team" | "history" | "achievements";
 const IDS: SectionId[] = ["about-us", "team", "history", "achievements"];
@@ -68,40 +71,54 @@ function SectionNav({ sections }: { sections: { id: string; label: string }[] })
 
 export function AboutPage() {
   const s = useSettings();
-  const sections = useSections(s.aboutSections);
-  return (
-    <div>
-      <div className="print-skip"><PageHero page="about" eyebrow="About us" title={s.aboutTitle} intro={s.aboutSubtitle}>
+  const t = useCopy();
+  const blocks = useContent("blocks");
+  const legacy = useSections(s.aboutSections);
+  const labelOf = (id: string) => legacy.find((x) => x.id === id)?.label ?? DEFAULT_LABEL[id as SectionId] ?? id;
+  // CMS → Page layouts wins; older sites fall back to Settings → About sections
+  const order = resolveLayout("about", s.layouts?.about ?? [{ id: "hero" }, ...legacy.map((x) => ({ id: x.id }))]).filter((x) => !x.hidden);
+  const navItems = order.filter((x) => IDS.includes(x.id as SectionId)).map((x) => ({ id: x.id, label: labelOf(x.id) }));
+  const chipIcons = [Heart, Star, Sun, Sparkles];
+  const chipTones = ["bg-[#FFE8E1] text-[#C2410C]", "bg-sky-soft text-blueBrand-700", "bg-sun-soft text-[#9A6400]", "bg-[#DCFCE7] text-[#15803D]"];
+  const chips = t("about.chips").split("|").map((x) => x.trim()).filter(Boolean);
+  const hero = (
+    <div className="print-skip"><PageHero page="about" eyebrow="About us" title={s.aboutTitle} intro={s.aboutSubtitle}>
+      {chips.length ? (
         <ul className="flex flex-wrap gap-2">
-          {[
-            ["Love", Heart, "bg-[#FFE8E1] text-[#C2410C]"],
-            ["Faith", Star, "bg-sky-soft text-blueBrand-700"],
-            ["Joy", Sun, "bg-sun-soft text-[#9A6400]"],
-            ["Since 2006", Sparkles, "bg-[#DCFCE7] text-[#15803D]"],
-          ].map(([l, I, c]) => {
-            const Icon = I as typeof Heart;
+          {chips.map((l, i) => {
+            const Icon = chipIcons[i % 4];
             return (
-              <li key={l as string} className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-extrabold ${c}`}>
-                <Icon className="h-4 w-4" aria-hidden /> {l as string}
+              <li key={l + i} className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-extrabold ${chipTones[i % 4]}`}>
+                <Icon className="h-4 w-4" aria-hidden /> {l}
               </li>
             );
           })}
         </ul>
-      </PageHero></div>
-
-      {sections.length > 1 ? <SectionNav sections={sections} /> : null}
-
-      {sections.map(({ id }) =>
-        id === "about-us" ? <VisionMission key={id} /> :
-        id === "team" ? (
-          <section key={id} id="team" className="print-skip scroll-mt-28">
-            <Container className="mt-28">
-              <TeamRoster />
-            </Container>
-          </section>
-        ) :
-        <HistorySection key={id} part={id} />,
-      )}
+      ) : null}
+    </PageHero></div>
+  );
+  const firstBuiltIn = order.findIndex((x) => IDS.includes(x.id as SectionId));
+  return (
+    <div>
+      {order.map(({ id }, idx) => {
+        if (id === "hero") return <Fragment key={id}>{hero}</Fragment>;
+        if (id.startsWith("block:")) {
+          const b = blocks?.find((x) => x.id === id.slice(6));
+          return b ? <ContentBlock key={id} b={b} /> : null;
+        }
+        // the jump bar sits just above the first built-in section
+        const nav = idx === firstBuiltIn && navItems.length > 1 ? <SectionNav sections={navItems} /> : null;
+        const body =
+          id === "about-us" ? <VisionMission /> :
+          id === "team" ? (
+            <section id="team" className="print-skip scroll-mt-28">
+              <Container className="mt-28">
+                <TeamRoster />
+              </Container>
+            </section>
+          ) : <HistorySection part={id as "history" | "achievements"} />;
+        return <Fragment key={id}>{nav}{body}</Fragment>;
+      })}
 
       <div className="print-skip"><AppPromo /></div>
     </div>

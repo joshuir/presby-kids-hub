@@ -1,798 +1,244 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { cn } from "@/lib/cn";
-import { Dropdown } from "@/components/ui/Dropdown";
-import type { CollectionName, Status } from "@/lib/cms/types";
-import { SCHEMAS, blank, titleOf } from "./fields";
-import { FieldEditor, uploadFile } from "./FieldEditor";
-import { ProductPreview } from "./ProductPreview";
-import { AccountPanel, SubAdminsPanel } from "./TeamPanels";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ExternalLink, LogOut, Menu, Search, X } from "lucide-react";
 import { useAdmin } from "@/components/admin/AdminGate";
-import { adminDelete, adminList, adminReset, adminUpsert, adminUpsertMany, deleteMedia, listMedia, rpc } from "@/lib/cms/client";
+import { cn } from "@/lib/cn";
+import { useSettings } from "@/lib/site";
+import { TABS, type CmsTab } from "./nav";
+import { ToastProvider, useNotify } from "./ui";
+import { Dashboard } from "./Dashboard";
+import { ThemeEditor } from "./ThemeEditor";
+import { NavigationEditor } from "./NavigationEditor";
+import { FooterEditor } from "./FooterEditor";
+import { LayoutEditor } from "./LayoutEditor";
+import { CopyEditor } from "./CopyEditor";
+import { SettingsEditor } from "./SettingsEditor";
+import { CollectionView } from "./CollectionView";
+import { MediaLibrary } from "./MediaLibrary";
 import { MessagesPanel } from "./MessagesPanel";
 import { CommentsPanel } from "./CommentsPanel";
 import { OrdersPanel } from "./OrdersPanel";
-import type { ProductDoc } from "@/lib/cms/types";
-
-type Doc = Record<string, unknown> & { id?: string; status?: Status; publishAt?: string; updatedAt?: string };
-type Tab = Exclude<CollectionName, never> | "media" | "team" | "account" | "messages" | "comments" | "orders";
-const PANEL_TABS = ["media", "team", "account", "messages", "comments", "orders"] as const;
-const isPanel = (t: Tab) => (PANEL_TABS as readonly string[]).includes(t);
-/** database permission section that guards each tab */
-const PERM: Partial<Record<Tab, string>> = { settings: "pages", faqs: "pages", milestones: "pages", heroes: "pages", posts: "blog", comments: "blog", units: "questions", orders: "products" };
-const ORDERED = ["classes", "products", "teachers", "milestones", "faqs", "gallery", "units", "mascots"];
-
-const TABS: { key: Tab; label: string; icon: string; group: string }[] = [
-  { key: "settings", label: "Site & pages", icon: "⚙️", group: "Site & pages" },
-  { key: "heroes", label: "Page heroes", icon: "🖼️", group: "Site & pages" },
-  { key: "faqs", label: "FAQs", icon: "❔", group: "Site & pages" },
-  { key: "milestones", label: "History & achievements", icon: "🕰️", group: "Site & pages" },
-  { key: "classes", label: "Classes", icon: "🏫", group: "Classes & teaching" },
-  { key: "lessons", label: "Lessons", icon: "📚", group: "Classes & teaching" },
-  { key: "teachers", label: "Teachers", icon: "👩‍🏫", group: "Classes & teaching" },
-  { key: "events", label: "Events", icon: "📅", group: "News & events" },
-  { key: "posts", label: "Blog posts", icon: "📝", group: "News & events" },
-  { key: "comments", label: "Comments", icon: "💬", group: "News & events" },
-  { key: "gallery", label: "Gallery", icon: "📸", group: "News & events" },
-  { key: "units", label: "Game units", icon: "🗺️", group: "Kids Zone games" },
-  { key: "questions", label: "Game questions", icon: "❓", group: "Kids Zone games" },
-  { key: "mascots", label: "Mascots", icon: "🦁", group: "Kids Zone games" },
-  { key: "leaderboard", label: "Leaderboard", icon: "🏆", group: "Kids Zone games" },
-  { key: "products", label: "Clothing", icon: "👕", group: "Shop" },
-  { key: "orders", label: "Orders", icon: "🧾", group: "Shop" },
-  { key: "media", label: "Media library", icon: "🖼️", group: "Admin" },
-  { key: "messages", label: "Messages", icon: "✉️", group: "Admin" },
-  { key: "team", label: "Sub-admins", icon: "👥", group: "Admin" },
-  { key: "account", label: "My account", icon: "🔑", group: "Admin" },
-];
-
-const STATUS_STYLE: Record<string, string> = {
-  published: "bg-emerald-100 text-emerald-800",
-  draft: "bg-black/5 text-black/60",
-  scheduled: "bg-sky-100 text-sky-800",
-  archived: "bg-amber-100 text-amber-800",
-};
-
-/**
- * Routes the CMS's requests to the database (the site is static, so there is no server API).
- * Permissions are enforced inside the database for every call.
- */
-async function api<T = unknown>(url: string, init?: RequestInit): Promise<T> {
-  const u = new URL(url, "https://x");
-  const method = (init?.method ?? "GET").toUpperCase();
-  const body = init?.body ? JSON.parse(String(init.body)) : null;
-  const seg = u.pathname.replace(/^\/api\/cms\//, "");
-
-  if (seg === "upload") {
-    if (method === "DELETE") {
-      await deleteMedia(u.searchParams.get("key") ?? "");
-      return { ok: true } as T;
-    }
-    return { items: await listMedia() } as T;
-  }
-
-  if (seg === "leaderboard") {
-    if (method === "GET") return { items: await rpc("kh_admin_leaderboard") } as T;
-    if (method === "DELETE") {
-      await rpc("kh_admin_leaderboard_delete", { pid: u.searchParams.get("id") });
-      return { ok: true } as T;
-    }
-    await rpc("kh_admin_leaderboard_save", {
-      pid: body.id,
-      nm: body.name,
-      new_xp: Number(body.xp ?? 0),
-      is_hidden: body.status === "archived",
-    });
-    return { item: { ...body, updatedAt: new Date().toISOString() } } as T;
-  }
-
-  const col = seg as Exclude<CollectionName, "leaderboard">;
-  if (method === "GET") return { items: await adminList(col) } as T;
-  if (method === "DELETE") {
-    await adminDelete(col, u.searchParams.get("id") ?? "");
-    return { ok: true } as T;
-  }
-  if (body?._action === "reset") {
-    await adminReset(col);
-    return { ok: true } as T;
-  }
-  if (body?._action === "bulk") {
-    await adminUpsertMany(col, body.items);
-    return { ok: true, count: body.items.length } as T;
-  }
-  const clean = Object.fromEntries(Object.entries(body ?? {}).filter(([, v]) => v !== undefined));
-  return { item: await adminUpsert(col, clean) } as T;
-}
-
-function effectiveStatus(d: Doc) {
-  if (d.status === "scheduled" && d.publishAt && new Date(d.publishAt).getTime() <= Date.now()) return "published";
-  return d.status ?? "draft";
-}
+import { AccountPanel, SubAdminsPanel } from "./TeamPanels";
+import { PageHeader } from "./ui";
 
 export function CmsApp() {
-  const { session } = useAdmin();
-  const isOwnerUser = session?.role === "owner";
-  const visibleTabs = TABS.filter((t) => {
-    if (t.key === "team") return isOwnerUser;
-    if (t.key === "account") return true;
-    if (t.key === "media") return true;
-    return isOwnerUser || (session?.permissions ?? []).includes(PERM[t.key] ?? t.key);
-  });
-  const [tab, setTab] = useState<Tab>(() => visibleTabs[0]?.key ?? "lessons");
-  const [items, setItems] = useState<Doc[]>([]);
-  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
-  const [lookups, setLookups] = useState<Record<string, { id: string; name: string }[]>>({});
-  const [loading, setLoading] = useState(false);
-  const [editing, setEditing] = useState<Doc | null>(null);
-  const [dirty, setDirty] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; tone: "ok" | "err" } | null>(null);
-  const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [extraFilter, setExtraFilter] = useState<string>("");
-  const [levelFilter, setLevelFilter] = useState<string>("");
-  const [page, setPage] = useState(0);
-  const [scheduleAt, setScheduleAt] = useState("");
-
-  const notify = (msg: string, tone: "ok" | "err" = "ok") => {
-    setToast({ msg, tone });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  const load = useCallback(async (t: Tab) => {
-    if (isPanel(t)) return;
-    setLoading(true);
-    try {
-      const d = await api<{ items: Doc[] }>(`/api/cms/${t}`);
-      setItems(d.items);
-    } catch (e) {
-      notify((e as Error).message, "err");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load(tab);
-    setEditing(null);
-    setQ("");
-    setStatusFilter("all");
-    setExtraFilter("");
-    setLevelFilter("");
-    setPage(0);
-  }, [tab, load]);
-
-  useEffect(() => {
-    api<{ items: Doc[] }>("/api/cms/classes")
-      .then((d) => setClasses(d.items.map((c) => ({ id: String(c.id), name: String(c.name) }))))
-      .catch(() => {});
-  }, []);
-
-  // option lists for "pick a teacher / class / event / lesson" fields
-  useEffect(() => {
-    const need: Record<string, string> = { teachers: "teachers", classes: "classes", events: "events", lessons: "lessons" };
-    const want = new Set(
-      (SCHEMAS[tab as Exclude<CollectionName, "leaderboard">] ?? []).filter((f) => f.source).map((f) => f.source as string),
-    );
-    want.forEach((src) => {
-      api<{ items: Doc[] }>(`/api/cms/${need[src]}`)
-        .then((d) =>
-          setLookups((cur) => ({
-            ...cur,
-            [src]: d.items.map((x) => ({
-              id: String(x.id),
-              name: src === "lessons" ? `${x.title} — ${x.classId} (${x.lessonDate})` : src === "events" ? `${x.title} (${x.date})` : String(x.name ?? x.title),
-            })),
-          })),
-        )
-        .catch(() => {});
-    });
-  }, [tab]);
-
-  // warn before leaving with unsaved changes
-  useEffect(() => {
-    const h = (e: BeforeUnloadEvent) => {
-      if (dirty) e.preventDefault();
-    };
-    window.addEventListener("beforeunload", h);
-    return () => window.removeEventListener("beforeunload", h);
-  }, [dirty]);
-
-  const save = async (doc: Doc, patch: Partial<Doc> = {}, msg = "Saved") => {
-    if (isPanel(tab)) return;
-    const body = { ...doc, ...patch };
-    if (tab === "settings") Object.assign(body, { id: "site", status: "published" });
-    // validation
-    const schema = tab !== "leaderboard" ? SCHEMAS[tab as Exclude<CollectionName, "leaderboard">] : [];
-    for (const f of schema) {
-      if (f.required && !String(body[f.key] ?? "").trim()) {
-        notify(`“${f.label}” is required`, "err");
-        return;
-      }
-    }
-    if (tab === "questions") {
-      const opts = ((body.options as string[]) ?? []).map((o) => o.trim()).filter(Boolean);
-      if (opts.length < 2) return notify("Add at least two answer options", "err");
-      if (!opts.includes(String(body.answer ?? "").trim())) return notify("Select the correct answer", "err");
-      body.options = opts;
-    }
-    const clean = (k: string) => {
-      if (Array.isArray(body[k])) body[k] = (body[k] as string[]).map((x) => String(x).trim()).filter(Boolean);
-    };
-    if (tab === "lessons") {
-      ["discussion", "activitySteps"].forEach(clean);
-      body.slug = String(body.slug || body.title || "")
-        .toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
-      if (items.some((d) => d.slug === body.slug && d.classId === body.classId && d.id !== body.id))
-        return notify("This class already has a lesson with that URL name", "err");
-      if (!body.id) body.id = `${body.classId}-${body.slug}`;
-    }
-    if (tab === "teachers") clean("highlights");
-    if (tab === "units") clean("stories");
-    if (tab === "settings") ["heroWords", "serviceTimes", "stats", "sundaySteps", "groups", "missionItems", "socials"].forEach(clean);
-    if (tab === "products") {
-      body.sizes = ((body.sizes as string[]) ?? []).map((s) => s.trim()).filter(Boolean);
-    }
-    try {
-      const d = await api<{ item: Doc }>(`/api/cms/${tab}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      setEditing(d.item);
-      setDirty(false);
-      notify(msg + " — the live site is updated.");
-      load(tab);
-    } catch (e) {
-      notify((e as Error).message, "err");
-    }
-  };
-
-  const remove = async (doc: Doc) => {
-    if (!doc.id) return setEditing(null);
-    if (!confirm(`Delete “${titleOf(tab as CollectionName, doc)}” permanently? This cannot be undone. (Tip: Archive keeps it.)`)) return;
-    try {
-      await api(`/api/cms/${tab}?id=${encodeURIComponent(doc.id)}`, { method: "DELETE" });
-      setEditing(null);
-      setDirty(false);
-      notify("Deleted");
-      load(tab);
-    } catch (e) {
-      notify((e as Error).message, "err");
-    }
-  };
-
-  const filtered = useMemo(() => {
-    const term = q.toLowerCase();
-    let list = items.filter((d) => !term || JSON.stringify(d).toLowerCase().includes(term));
-    if (statusFilter !== "all") list = list.filter((d) => effectiveStatus(d) === statusFilter);
-    if (tab === "questions" && levelFilter) list = list.filter((d) => d.difficulty === levelFilter);
-    if (extraFilter) {
-      if (tab === "lessons") list = list.filter((d) => d.classId === extraFilter);
-      if (tab === "questions") list = list.filter((d) => d.story === extraFilter || d.testament === extraFilter);
-    }
-    if (tab === "leaderboard") list = [...list].sort((a, b) => Number(b.xp) - Number(a.xp));
-    if (tab === "lessons") list = [...list].sort((a, b) => String(b.lessonDate).localeCompare(String(a.lessonDate)));
-    if (ORDERED.includes(tab)) list = [...list].sort((a, b) => Number(a.order) - Number(b.order));
-    if (tab === "posts" || tab === "events") list = [...list].sort((a, b) => String(b.date).localeCompare(String(a.date)));
-    return list;
-  }, [items, q, statusFilter, extraFilter, levelFilter, tab]);
-
-  const PAGE = 40;
-  const pageItems = filtered.slice(page * PAGE, page * PAGE + PAGE);
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { all: items.length };
-    items.forEach((d) => (c[effectiveStatus(d)] = (c[effectiveStatus(d)] ?? 0) + 1));
-    return c;
-  }, [items]);
-
-  const stories = useMemo(() => (tab === "questions" ? [...new Set(items.map((d) => String(d.story)))].sort() : []), [items, tab]);
-  // stories grouped by testament, kept in Bible/question-bank order
-  const storyGroups = useMemo(() => {
-    const seen = new Map<string, string>();
-    items.forEach((d) => { if (tab === "questions" && d.story && !seen.has(String(d.story))) seen.set(String(d.story), String(d.testament)); });
-    return ([["OT", "Old Testament stories"], ["NT", "New Testament stories"]] as const)
-      .map(([t, l]) => [l, [...seen].filter(([, tt]) => tt === t).map(([st]) => st)] as const)
-      .filter(([, l]) => l.length);
-  }, [items, tab]);
-
-  const previewUrl = (d: Doc) => {
-    if (tab === "lessons" && d.classId) return `/classes/lesson/?c=${d.classId}&l=${d.slug}&preview=${d.id}`;
-    if (tab === "classes") return `/classes/view/?c=${d.id}`;
-    if (tab === "products") return "/collection/";
-    if (tab === "questions" || tab === "mascots" || tab === "leaderboard" || tab === "units") return "/games/";
-    if (tab === "posts") return `/blog/#${d.id}`;
-    if (tab === "events") return `/events/#${d.id}`;
-    if (tab === "gallery") return `/gallery/?album=${d.id}`;
-    if (tab === "teachers") return `/about/?teacher=${d.id}#team`;
-    if (tab === "milestones") return "/about/#history";
-    if (tab === "heroes") {
-      const map: Record<string, string> = { about: "/about/", classes: "/classes/", events: "/events/", blog: "/blog/", gallery: "/gallery/", contact: "/contact/", games: "/games/", collection: "/collection/", safeguarding: "/safeguarding/", accessibility: "/accessibility/", privacy: "/privacy/", terms: "/terms/" };
-      return map[String(d.id)] ?? "/";
-    }
-    if (tab === "faqs") return "/contact/";
-    return "/";
-  };
-
-  const curGroup = TABS.find((t) => t.key === tab)?.group ?? "";
-  const goTab = (k: Tab) => {
-    if (k === tab) return;
-    if (dirty && !confirm("Discard unsaved changes?")) return;
-    setDirty(false);
-    setTab(k);
-  };
-
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl">Content manager</h1>
-          <p className="text-sm text-black/60">Changes save to the database and appear on the live website straight away — no redeploy needed.</p>
+    <ToastProvider>
+      <Cms />
+    </ToastProvider>
+  );
+}
+
+const readHash = (): CmsTab | null => {
+  const h = (typeof location !== "undefined" ? location.hash : "").replace(/^#\/?/, "").split("?")[0];
+  return TABS.some((t) => t.key === h) ? (h as CmsTab) : null;
+};
+
+function Cms() {
+  const { session, signOut } = useAdmin();
+  const site = useSettings();
+  const notify = useNotify();
+  const isOwner = session?.role === "owner";
+  const perms = useMemo(() => session?.permissions ?? [], [session?.permissions]);
+  const allowed = useCallback(
+    (t: CmsTab) => {
+      const def = TABS.find((x) => x.key === t);
+      if (!def) return false;
+      if (t === "team") return isOwner;
+      if (!def.perm) return true;
+      return isOwner || perms.includes(def.perm);
+    },
+    [isOwner, perms],
+  );
+  const visible = TABS.filter((t) => allowed(t.key));
+  const [rawTab, setTab] = useState<CmsTab>(() => readHash() ?? "dashboard");
+  const tab: CmsTab = allowed(rawTab) ? rawTab : "dashboard";
+  const [target, setTarget] = useState<{ id?: string; isNew?: boolean } | null>(null);
+  const [drawer, setDrawer] = useState(false);
+  const [palette, setPalette] = useState(false);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  // deep links: /admin/#theme
+  useEffect(() => {
+    const on = () => { const x = readHash(); if (x && allowed(x)) setTab(x); };
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, [allowed]);
+
+  const go = useCallback((t: CmsTab, opts?: { id?: string; isNew?: boolean }) => {
+    if (!allowed(t)) return;
+    setTab(t);
+    setTarget(opts ?? null);
+    setDrawer(false);
+    setPalette(false);
+    if (location.hash !== `#${t}`) history.replaceState(null, "", `#${t}`);
+    window.scrollTo({ top: 0 });
+  }, [allowed]);
+
+  // ⌘K / Ctrl+K opens search
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setPalette((p) => !p); }
+      if (e.key === "Escape") { setPalette(false); setDrawer(false); }
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, []);
+
+  const groups = useMemo(() => {
+    const m = new Map<string, typeof visible>();
+    visible.forEach((t) => m.set(t.group, [...(m.get(t.group) ?? []), t]));
+    return [...m.entries()];
+  }, [visible]);
+  const current = TABS.find((t) => t.key === tab);
+  const consumed = useCallback(() => setTarget(null), []);
+
+  const sidebar = (
+    <nav aria-label="CMS" className="flex h-full flex-col">
+      <div className="flex items-center gap-2.5 px-4 pb-3 pt-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={site.logoUrl || "/brand/logo.png"} alt="" className="h-9 w-auto" />
+        <div className="min-w-0 leading-tight">
+          <div className="truncate text-sm font-bold text-slate-900">{site.siteName}</div>
+          <div className="text-[11px] font-semibold text-slate-500">Content manager</div>
         </div>
       </div>
-
-      <div className="grid gap-2 rounded-3xl bg-white p-2 shadow-soft ring-1 ring-black/5 sm:flex sm:items-center">
-        <Dropdown
-          label="CMS section"
-          hideLabel
-          testId="cms-section"
-          className="sm:w-72 sm:shrink-0"
-          buttonClassName="bg-paper"
-          value={tab}
-          onChange={(k) => goTab(k as Tab)}
-          options={visibleTabs.map((t) => ({ value: t.key, label: t.label, icon: t.icon, group: t.group }))}
-        />
-        <div className="no-scrollbar flex gap-1 overflow-x-auto" role="tablist" aria-label={`${curGroup} sections`}>
-          {visibleTabs.filter((t) => t.group === curGroup).map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.key}
-              onClick={() => goTab(t.key)}
-              className={cn(
-                "whitespace-nowrap rounded-2xl px-3.5 py-2 text-sm font-semibold",
-                tab === t.key ? "bg-blueBrand-600 text-white" : "hover:bg-blueBrand-50",
-              )}
-            >
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {tab === "orders" ? (
-        <OrdersPanel notify={notify} />
-      ) : tab === "comments" ? (
-        <CommentsPanel notify={notify} />
-      ) : tab === "messages" ? (
-        <MessagesPanel notify={notify} />
-      ) : tab === "team" ? (
-        <SubAdminsPanel notify={notify} />
-      ) : tab === "account" ? (
-        <AccountPanel notify={notify} name={session?.name ?? ""} email={session?.username ?? ""} />
-      ) : tab === "media" ? (
-        <MediaLibrary notify={notify} canDelete={isOwnerUser || (session?.permissions ?? []).includes("media")} />
-      ) : (
-        <div className="grid gap-4 xl:grid-cols-[minmax(320px,420px)_1fr]">
-          {/* list */}
-          <div className="rounded-3xl bg-white p-3 shadow-soft ring-1 ring-black/5">
-            <div className="flex flex-wrap gap-2">
-              <input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder="Search…" className="min-w-0 flex-1 rounded-xl px-3 py-2 text-sm ring-1 ring-black/10" />
-              {tab !== "leaderboard" && tab !== "settings" ? (
-                <button
-                  type="button"
-                  className="rounded-xl bg-blueBrand-600 px-3 py-2 text-sm font-bold text-white"
-                  onClick={() => {
-                    if (dirty && !confirm("Discard unsaved changes?")) return;
-                    setEditing(blank(tab as CollectionName, tab === "lessons" && extraFilter ? { classId: extraFilter } : {}) as Doc);
-                    setDirty(true);
-                  }}
-                >
-                  + New
-                </button>
-              ) : null}
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1 text-xs">
-              {["all", "published", "scheduled", "draft", "archived"].map((s) => (
-                <button key={s} type="button" onClick={() => { setStatusFilter(s); setPage(0); }} className={cn("rounded-full px-2.5 py-1 font-semibold capitalize ring-1 ring-black/10", statusFilter === s && "bg-ink-950 text-white")}>
-                  {s} {counts[s] ? `(${counts[s]})` : ""}
-                </button>
-              ))}
-            </div>
-            {tab === "lessons" ? (
-              <select value={extraFilter} onChange={(e) => setExtraFilter(e.target.value)} className="mt-2 w-full rounded-xl px-3 py-2 text-sm ring-1 ring-black/10" aria-label="Filter by class">
-                <option value="">All classes</option>
-                {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            ) : null}
-            {tab === "questions" ? (
-              <>
-                <div className="mt-2 grid gap-2">
-                  <select value={extraFilter} onChange={(e) => { setExtraFilter(e.target.value); setPage(0); }} className="min-w-0 rounded-xl px-3 py-2 text-sm ring-1 ring-black/10" aria-label="Filter questions by story">
-                    <option value="">All stories ({items.length})</option>
-                    <optgroup label="Testament"><option value="OT">Old Testament</option><option value="NT">New Testament</option></optgroup>
-                    {storyGroups.map(([g, list]) => (
-                      <optgroup key={g} label={g}>{list.map((st) => <option key={st} value={st}>{st} ({items.filter((d) => d.story === st).length})</option>)}</optgroup>
-                    ))}
-                  </select>
-                  <select value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value); setPage(0); }} className="rounded-xl px-3 py-2 text-sm capitalize ring-1 ring-black/10" aria-label="Filter questions by level">
-                    <option value="">All levels</option>
-                    {["easy", "medium", "hard", "expert"].map((d) => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-                <BulkImport stories={stories} onDone={(n) => { notify(`Imported ${n} questions`); load("questions"); }} notify={notify} />
-              </>
-            ) : null}
-
-            <div className="mt-3 text-xs text-black/50">{loading ? "Loading…" : `${filtered.length} item${filtered.length === 1 ? "" : "s"}`}</div>
-            <ul className="mt-1 grid max-h-[65dvh] gap-1 overflow-y-auto pr-1">
-              {pageItems.map((d) => {
-                const st = effectiveStatus(d);
-                return (
-                  <li key={String(d.id)}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (dirty && !confirm("Discard unsaved changes?")) return;
-                        setEditing(d);
-                        setDirty(false);
-                        setScheduleAt(d.publishAt ? String(d.publishAt).slice(0, 16) : "");
-                      }}
-                      className={cn("w-full rounded-2xl px-3 py-2 text-left text-sm ring-1 ring-transparent hover:bg-blueBrand-50", editing?.id === d.id && "bg-blueBrand-50 ring-blueBrand-300")}
-                    >
-                      <span className="flex items-start justify-between gap-2">
-                        <span className="line-clamp-2 font-semibold">
-                          {tab === "leaderboard" ? `${d.mascot ?? ""} ${d.name}` : titleOf(tab as CollectionName, d)}
-                        </span>
-                        <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", STATUS_STYLE[st])}>{st}</span>
-                      </span>
-                      <span className="block text-xs text-black/50">
-                        {tab === "lessons" && `${classes.find((c) => c.id === d.classId)?.name ?? d.classId} · ${d.lessonDate}`}
-                        {tab === "questions" && `${d.testament} · ${d.difficulty} · ${d.story}`}
-                        {tab === "products" && `${d.currency} ${d.price} · ${(d.colorways as unknown[])?.length ?? 0} colours`}
-                        {tab === "leaderboard" && `${d.xp} XP · 🔥${d.streak} · ${(d.achievements as unknown[])?.length ?? 0} badges`}
-                        {tab === "classes" && `${d.group} · ${d.ageRange}`}
-                        {tab === "mascots" && `${d.emoji} · unlocks at ${d.unlockXp} XP`}
-                        {tab === "posts" && `${d.kind} · ${d.date}${d.pinned === "yes" ? " · pinned" : ""}`}
-                        {tab === "gallery" && `${d.category} · ${d.date}`}
-                        {tab === "faqs" && String(d.category ?? "")}
-                        {tab === "units" && `${d.icon} · ${d.testament} · ${(d.stories as unknown[])?.length || "all"} stories`}
-                        {tab === "events" && `${d.date} · ${d.location}`}
-                        {tab === "teachers" && String(d.role ?? "")}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            {filtered.length > PAGE ? (
-              <div className="mt-2 flex items-center justify-between text-xs">
-                <button type="button" disabled={page === 0} onClick={() => setPage(page - 1)} className="rounded-lg px-2 py-1 ring-1 ring-black/10 disabled:opacity-40">← Prev</button>
-                <span>Page {page + 1} / {Math.ceil(filtered.length / PAGE)}</span>
-                <button type="button" disabled={(page + 1) * PAGE >= filtered.length} onClick={() => setPage(page + 1)} className="rounded-lg px-2 py-1 ring-1 ring-black/10 disabled:opacity-40">Next →</button>
-              </div>
-            ) : null}
-            {tab !== "leaderboard" ? (
-              <button
-                type="button"
-                className="mt-3 text-xs text-black/40 underline"
-                onClick={async () => {
-                  if (!confirm(`Reset ALL ${tab} to the original starter content? Your changes to ${tab} will be lost.`)) return;
-                  await api(`/api/cms/${tab}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ _action: "reset" }) });
-                  notify("Reset to starter content");
-                  load(tab);
-                }}
-              >
-                Reset {tab} to starter content
+      <button type="button" onClick={() => setPalette(true)} className="mx-3 mb-2 flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-400 hover:border-slate-300" aria-label="Search the CMS">
+        <Search className="h-4 w-4" /> <span className="flex-1 text-left">Search…</span>
+        <kbd className="rounded border border-slate-200 px-1.5 text-[10px] font-semibold text-slate-400">⌘K</kbd>
+      </button>
+      <div className="flex-1 overflow-y-auto px-2 pb-4">
+        {groups.map(([g, items]) => (
+          <div key={g || "top"} className="mt-1">
+            {g ? (
+              <button type="button" onClick={() => setCollapsed((c) => ({ ...c, [g]: !c[g] }))} aria-expanded={!collapsed[g]} className="flex w-full items-center justify-between px-2.5 pb-1 pt-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600">
+                {g}
+                <ChevronDown className={cn("h-3.5 w-3.5 transition", collapsed[g] && "-rotate-90")} />
               </button>
             ) : null}
-          </div>
-
-          {/* editor */}
-          <div className="rounded-3xl bg-white p-5 shadow-soft ring-1 ring-black/5">
-            {!editing ? (
-              <div className="grid min-h-60 place-items-center text-center text-sm text-black/50">
-                Select an item to edit{tab !== "leaderboard" ? ", or create a new one" : ""}.
-              </div>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  save(editing);
-                }}
-                className="grid gap-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/5 pb-3">
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-black/40">{editing.id ? "Editing" : "New"} · {tab}</div>
-                    <div className="font-display text-xl">{titleOf(tab as CollectionName, editing) || "Untitled"}</div>
-                    {editing.updatedAt ? <div className="text-xs text-black/40">Last saved {new Date(String(editing.updatedAt)).toLocaleString()}</div> : null}
-                  </div>
-                  <span className={cn("rounded-full px-3 py-1 text-xs font-bold uppercase", STATUS_STYLE[effectiveStatus(editing)])}>
-                    {effectiveStatus(editing)}
-                    {editing.status === "scheduled" && editing.publishAt && effectiveStatus(editing) === "scheduled" ? ` · ${new Date(String(editing.publishAt)).toLocaleString()}` : ""}
-                  </span>
-                </div>
-
-                {tab === "leaderboard" ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-bold uppercase text-black/55">Player name</span>
-                      <input className="w-full rounded-xl px-3 py-2 text-sm ring-1 ring-black/15" value={String(editing.name ?? "")} onChange={(e) => { setEditing({ ...editing, name: e.target.value }); setDirty(true); }} />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-bold uppercase text-black/55">XP</span>
-                      <input type="number" className="w-full rounded-xl px-3 py-2 text-sm ring-1 ring-black/15" value={Number(editing.xp ?? 0)} onChange={(e) => { setEditing({ ...editing, xp: Number(e.target.value) }); setDirty(true); }} />
-                    </label>
-                    <div className="text-sm text-black/60 sm:col-span-2">
-                      Achievements: {((editing.achievements as string[]) ?? []).join(", ") || "none"} · Streak {String(editing.streak)} · Stories completed {String(editing.storiesCompleted ?? 0)}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {tab === "products" ? (
-                      <div className="md:col-span-2">
-                        <ProductPreview product={editing as unknown as ProductDoc} />
-                      </div>
-                    ) : null}
-                    {SCHEMAS[tab as Exclude<CollectionName, "leaderboard">].some((f) => f.type === "heading") ? (
-                      <nav aria-label="Jump to a group of settings" className="sticky top-0 z-10 -mx-1 flex flex-wrap gap-1.5 bg-white/95 px-1 py-2 backdrop-blur md:col-span-2">
-                        {SCHEMAS[tab as Exclude<CollectionName, "leaderboard">].filter((f) => f.type === "heading").map((f) => (
-                          <a key={f.key} href={`#cmsh-${f.key}`} className="rounded-full bg-blueBrand-50 px-3 py-1.5 text-xs font-bold text-blueBrand-800 hover:bg-blueBrand-100">{f.label}</a>
-                        ))}
-                      </nav>
-                    ) : null}
-                    {SCHEMAS[tab as Exclude<CollectionName, "leaderboard">].map((f) => (
-                      <div key={f.key} className={f.wide || f.type === "heading" ? "md:col-span-2" : ""}>
-                        <FieldEditor
-                          field={f}
-                          doc={editing}
-                          classes={classes}
-                          lookups={lookups}
-                          set={(k, v) => {
-                            setEditing((cur) => ({ ...(cur ?? {}), [k]: v }));
-                            setDirty(true);
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* publishing */}
-                <div className="sticky bottom-0 -mx-5 -mb-5 grid gap-3 rounded-b-3xl border-t border-black/5 bg-white/95 p-4 backdrop-blur">
-                  {tab !== "leaderboard" && tab !== "settings" ? (
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="font-semibold">Schedule:</span>
-                      <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="rounded-xl px-2 py-1.5 ring-1 ring-black/15" />
-                      <button
-                        type="button"
-                        disabled={!scheduleAt}
-                        onClick={() => save(editing, { status: "scheduled", publishAt: new Date(scheduleAt).toISOString() }, `Scheduled for ${new Date(scheduleAt).toLocaleString()}`)}
-                        className="rounded-xl bg-sky-600 px-3 py-1.5 font-bold text-white disabled:opacity-40"
-                      >
-                        Schedule publish
-                      </button>
-                    </div>
-                  ) : null}
-                  <div className="flex flex-wrap gap-2">
-                    <button type="submit" className="rounded-xl px-4 py-2 text-sm font-bold ring-1 ring-black/15">
-                      {dirty ? "Save changes" : "Save"}
+            {!collapsed[g] ? (
+              <ul className="grid gap-0.5">
+                {items.map((t) => (
+                  <li key={t.key}>
+                    <button
+                      type="button"
+                      data-tab={t.key}
+                      onClick={() => go(t.key)}
+                      aria-current={tab === t.key ? "page" : undefined}
+                      className={cn("flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-semibold transition", tab === t.key ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900")}
+                    >
+                      <t.icon className={cn("h-[18px] w-[18px] shrink-0", tab === t.key ? "text-blue-600" : "text-slate-400")} />
+                      {t.label}
                     </button>
-                    {tab !== "leaderboard" && tab !== "settings" ? (
-                      <button type="button" onClick={() => save(editing, { status: "published", publishAt: undefined }, "Published")} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white">
-                        Publish now
-                      </button>
-                    ) : null}
-                    {tab === "settings" ? null : <>
-                    {effectiveStatus(editing) === "published" || editing.status === "scheduled" ? (
-                      <button type="button" onClick={() => save(editing, { status: "draft" }, "Unpublished")} className="rounded-xl px-4 py-2 text-sm font-bold ring-1 ring-black/15">
-                        Unpublish
-                      </button>
-                    ) : null}
-                    {editing.status !== "archived" ? (
-                      <button type="button" disabled={!editing.id} onClick={() => save(editing, { status: "archived" }, tab === "leaderboard" ? "Hidden from leaderboard" : "Archived")} className="rounded-xl bg-amber-100 px-4 py-2 text-sm font-bold text-amber-900 disabled:opacity-40">
-                        {tab === "leaderboard" ? "Hide" : "Archive"}
-                      </button>
-                    ) : (
-                      <button type="button" onClick={() => save(editing, { status: tab === "leaderboard" ? "published" : "draft" }, "Restored")} className="rounded-xl bg-amber-100 px-4 py-2 text-sm font-bold text-amber-900">
-                        Restore
-                      </button>
-                    )}
-                    {editing.id && tab !== "leaderboard" ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const copy: Doc = { ...editing, id: undefined, status: "draft", createdAt: undefined, updatedAt: undefined };
-                          if (copy.title) copy.title = `${copy.title} (copy)`;
-                          else if (copy.name) copy.name = `${copy.name} (copy)`;
-                          setEditing(copy);
-                          setDirty(true);
-                        }}
-                        className="rounded-xl px-4 py-2 text-sm font-bold ring-1 ring-black/15"
-                      >
-                        Duplicate
-                      </button>
-                    ) : null}
-                    {editing.id ? (
-                      <a href={previewUrl(editing)} target="_blank" rel="noreferrer" className="rounded-xl px-4 py-2 text-sm font-bold text-blueBrand-700 ring-1 ring-blueBrand-200">
-                        Preview ↗
-                      </a>
-                    ) : null}
-                    <button type="button" onClick={() => remove(editing)} className="ml-auto rounded-xl px-4 py-2 text-sm font-bold text-red-700 ring-1 ring-red-200">
-                      Delete
-                    </button>
-                    </>}
-                  </div>
-                  {tab === "lessons" && editing.id ? (
-                    <p className="text-xs text-black/45">
-                      Preview opens the class page showing this lesson even if it isn’t published. Resize the browser (or use your phone) to check the mobile layout. Archived lessons stay in the class archive with all their media and downloads.
-                    </p>
-                  ) : null}
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {toast ? (
-        <div role="status" className={cn("fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-card", toast.tone === "ok" ? "bg-ink-950" : "bg-red-600")}>
-          {toast.msg}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function BulkImport({ stories, onDone, notify }: { stories: string[]; onDone: (n: number) => void; notify: (m: string, t?: "ok" | "err") => void }) {
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
-  const [story, setStory] = useState("");
-  const [ref, setRef] = useState("");
-  const [testament, setTestament] = useState("OT");
-  const [difficulty, setDifficulty] = useState("easy");
-  const [busy, setBusy] = useState(false);
-
-  if (!open)
-    return (
-      <button type="button" onClick={() => setOpen(true)} className="mt-2 w-full rounded-xl px-3 py-2 text-xs font-bold ring-1 ring-dashed ring-black/20">
-        + Bulk import questions (paste Q & A)
-      </button>
-    );
-
-  const parse = () => {
-    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-    const pairs: { q: string; a: string }[] = [];
-    let cur: string | null = null;
-    for (const l of lines) {
-      if (/^answer\s*[:.\-]/i.test(l)) {
-        if (cur) pairs.push({ q: cur, a: l.replace(/^answer\s*[:.\-]\s*/i, "").replace(/\.$/, "") });
-        cur = null;
-      } else cur = l.replace(/^\d+[.)]\s*/, "");
-    }
-    return pairs;
-  };
-  const pairs = parse();
-
-  return (
-    <div className="mt-2 grid gap-2 rounded-2xl bg-black/[0.03] p-3 text-xs">
-      <div className="font-bold">Paste questions like:<br /><code>Who swallowed Jonah?<br />Answer: A great fish</code></div>
-      <textarea value={text} onChange={(e) => setText(e.target.value)} className="min-h-32 rounded-xl p-2 ring-1 ring-black/10" />
-      <input list="story-list" value={story} onChange={(e) => setStory(e.target.value)} placeholder="Story name (e.g. Jonah and the Great Fish)" className="rounded-xl px-2 py-1.5 ring-1 ring-black/10" />
-      <datalist id="story-list">{stories.map((s) => <option key={s} value={s} />)}</datalist>
-      <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Bible reference (e.g. Jonah 1–3)" className="rounded-xl px-2 py-1.5 ring-1 ring-black/10" />
-      <div className="flex gap-2">
-        <select value={testament} onChange={(e) => setTestament(e.target.value)} className="flex-1 rounded-xl px-2 py-1.5 ring-1 ring-black/10"><option value="OT">Old Testament</option><option value="NT">New Testament</option></select>
-        <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="flex-1 rounded-xl px-2 py-1.5 ring-1 ring-black/10">{["easy", "medium", "hard", "expert"].map((d) => <option key={d}>{d}</option>)}</select>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          disabled={!pairs.length || !story || busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              const answers = pairs.map((p) => p.a);
-              const items = pairs.map((p, i) => {
-                const others = answers.filter((a, j) => j !== i && a.toLowerCase() !== p.a.toLowerCase());
-                const distract = [...new Set(others)].sort(() => Math.random() - 0.5).slice(0, 3);
-                while (distract.length < 3) distract.push(["None of these", "Not mentioned", "Someone else"][distract.length]);
-                const options = [...distract, p.a].sort(() => Math.random() - 0.5);
-                return { question: p.q, answer: p.a, options, story, ref, testament, difficulty, status: "published" };
-              });
-              await api("/api/cms/questions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ _action: "bulk", items }),
-              });
-              onDone(pairs.length);
-              setText("");
-              setOpen(false);
-            } catch (e) {
-              notify((e as Error).message, "err");
-            } finally {
-              setBusy(false);
-            }
-          }}
-          className="rounded-xl bg-blueBrand-600 px-3 py-2 font-bold text-white disabled:opacity-40"
-        >
-          {busy ? "Importing…" : `Import ${pairs.length} question${pairs.length === 1 ? "" : "s"}`}
-        </button>
-        <button type="button" onClick={() => setOpen(false)} className="underline">Cancel</button>
-      </div>
-      <div className="text-black/50">Wrong-answer options are generated from the other answers — edit any question afterwards to fine-tune.</div>
-    </div>
-  );
-}
-
-function MediaLibrary({ notify, canDelete }: { notify: (m: string, t?: "ok" | "err") => void; canDelete: boolean }) {
-  const [items, setItems] = useState<{ key: string; url: string }[]>([]);
-  const [busy, setBusy] = useState(false);
-  const load = useCallback(() => {
-    api<{ items: { key: string; url: string }[] }>("/api/cms/upload").then((d) => setItems(d.items.reverse())).catch((e) => notify(e.message, "err"));
-  }, [notify]);
-  useEffect(() => {
-    load();
-  }, [load]);
-  return (
-    <div className="rounded-3xl bg-white p-5 shadow-soft ring-1 ring-black/5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-black/60">Upload images, videos, PDFs and Word files (max 50 MB). Copy a link to use it anywhere in the CMS.</p>
-        <label className="cursor-pointer rounded-xl bg-blueBrand-600 px-4 py-2 text-sm font-bold text-white">
-          {busy ? "Uploading…" : "+ Upload files"}
-          <input
-            type="file"
-            multiple
-            className="hidden"
-            accept="image/*,video/*,.pdf,.doc,.docx"
-            onChange={async (e) => {
-              const files = [...(e.target.files ?? [])];
-              setBusy(true);
-              for (const f of files) {
-                try {
-                  await uploadFile(f);
-                } catch (x) {
-                  notify(`${f.name}: ${(x as Error).message}`, "err");
-                }
-              }
-              setBusy(false);
-              e.target.value = "";
-              load();
-            }}
-          />
-        </label>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {items.length === 0 ? <div className="text-sm text-black/40">No uploads yet.</div> : null}
-        {items.map((m) => (
-          <div key={m.key} className="overflow-hidden rounded-2xl ring-1 ring-black/10">
-            {/\.(png|jpe?g|gif|webp|svg)$/i.test(m.key) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={m.url} alt="" className="aspect-square w-full object-cover" loading="lazy" />
-            ) : (
-              <div className="grid aspect-square place-items-center bg-black/5 text-3xl">{/\.(mp4|webm|mov)$/i.test(m.key) ? "🎬" : "📄"}</div>
-            )}
-            <div className="grid gap-1 p-2 text-[11px]">
-              <span className="truncate font-semibold" title={m.key}>{m.key.replace(/^[a-z0-9]+-/, "")}</span>
-              <div className="flex gap-1">
-                <button type="button" className="flex-1 rounded-lg px-2 py-1 ring-1 ring-black/10" onClick={() => { navigator.clipboard?.writeText(m.url); notify("Link copied"); }}>Copy link</button>
-                {canDelete ? <button
-                  type="button"
-                  className="rounded-lg px-2 py-1 text-red-700 ring-1 ring-red-200"
-                  onClick={async () => {
-                    if (!confirm("Delete this file? Anything using it will show a broken link.")) return;
-                    await api(`/api/cms/upload?key=${encodeURIComponent(m.key)}`, { method: "DELETE" });
-                    load();
-                  }}
-                >
-                  ✕
-                </button> : null}
-              </div>
-            </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         ))}
+      </div>
+      <div className="border-t border-slate-200 p-3">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-900 text-xs font-bold text-white">{(session?.name || session?.username || "A").slice(0, 1).toUpperCase()}</span>
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-sm font-semibold text-slate-800">{session?.name || session?.username}</div>
+            <div className="text-[11px] text-slate-500">{isOwner ? "Main admin" : "Sub-admin"}</div>
+          </div>
+          <button type="button" onClick={() => signOut()} aria-label="Sign out" className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><LogOut className="h-4 w-4" /></button>
+        </div>
+      </div>
+    </nav>
+  );
+
+  const collectionTabs: CmsTab[] = ["heroes", "custompages", "blocks", "posts", "events", "gallery", "classes", "lessons", "teachers", "faqs", "milestones", "units", "questions", "mascots", "leaderboard", "products"];
+
+  return (
+    <div className="min-h-dvh bg-[#F6F7F9] text-slate-900 [font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe_UI',Roboto,sans-serif]" data-cms>
+      {/* desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-slate-200 bg-[#FBFBFC] lg:block">{sidebar}</aside>
+
+      {/* phone drawer */}
+      {drawer ? (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="CMS menu">
+          <button type="button" aria-label="Close menu" className="absolute inset-0 bg-slate-900/40" onClick={() => setDrawer(false)} />
+          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-[#FBFBFC] shadow-2xl">{sidebar}</aside>
+        </div>
+      ) : null}
+
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-slate-200 bg-white/90 px-3 backdrop-blur sm:px-5">
+          <button type="button" onClick={() => setDrawer(true)} aria-label="Open CMS menu" className="grid h-9 w-9 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"><Menu className="h-5 w-5" /></button>
+          <div className="min-w-0 flex-1 truncate text-sm">
+            {current?.group ? <span className="text-slate-400">{current.group} / </span> : null}
+            <span className="font-semibold text-slate-800">{current?.label}</span>
+          </div>
+          <button type="button" onClick={() => setPalette(true)} aria-label="Search" className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 lg:hidden"><Search className="h-4 w-4" /></button>
+          <a href="/" target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"><ExternalLink className="h-4 w-4" /> <span className="hidden sm:inline">View site</span></a>
+        </header>
+
+        <main className="mx-auto max-w-[1600px] p-3 sm:p-5 lg:p-7" data-cms-tab={tab}>
+          {tab === "dashboard" ? <Dashboard name={session?.name ?? ""} go={go} allowed={allowed} /> : null}
+          {tab === "theme" ? <ThemeEditor /> : null}
+          {tab === "navigation" ? <NavigationEditor /> : null}
+          {tab === "footer" ? <FooterEditor /> : null}
+          {tab === "layouts" ? <LayoutEditor onEditBlock={(id) => go("blocks", { id })} onNewBlock={() => go("blocks", { isNew: true })} /> : null}
+          {tab === "copy" ? <CopyEditor /> : null}
+          {tab === "settings" ? <SettingsEditor /> : null}
+          {collectionTabs.includes(tab) ? <CollectionView key={tab} col={tab as never} openId={target?.id} startNew={target?.isNew} onConsumed={consumed} /> : null}
+          {tab === "media" ? <MediaLibrary canDelete={isOwner || perms.includes("media")} /> : null}
+          {tab === "messages" ? <><PageHeader title="Messages" intro="Contact messages, registrations and newsletter sign-ups from the website." /><div className="mt-5"><MessagesPanel notify={notify} /></div></> : null}
+          {tab === "comments" ? <><PageHeader title="Comments" intro="Approve, reply to or remove comments on blog posts." /><div className="mt-5"><CommentsPanel notify={notify} /></div></> : null}
+          {tab === "orders" ? <><PageHeader title="Orders" intro="Clothing orders, payments, delivery and collection." /><div className="mt-5"><OrdersPanel notify={notify} /></div></> : null}
+          {tab === "team" ? <><PageHeader title="Sub-admins" intro="Invite people to help run the website and choose what they can manage." /><div className="mt-5"><SubAdminsPanel notify={notify} /></div></> : null}
+          {tab === "account" ? <><PageHeader title="My account" /><div className="mt-5"><AccountPanel notify={notify} name={session?.name ?? ""} email={session?.username ?? ""} /></div></> : null}
+        </main>
+      </div>
+
+      {palette ? <CommandPalette tabs={visible} onPick={(t) => go(t)} onClose={() => setPalette(false)} /> : null}
+    </div>
+  );
+}
+
+function CommandPalette({ tabs, onPick, onClose }: { tabs: typeof TABS; onPick: (t: CmsTab) => void; onClose: () => void }) {
+  const [q, setQ] = useState("");
+  const [i, setI] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => input.current?.focus(), []);
+  const term = q.trim().toLowerCase();
+  const list = tabs.filter((t) => !term || `${t.label} ${t.group} ${t.keywords ?? ""}`.toLowerCase().includes(term));
+  return (
+    <div className="fixed inset-0 z-[70] flex items-start justify-center bg-slate-900/40 px-3 pt-[12vh]" role="dialog" aria-modal="true" aria-label="Search the CMS" onClick={onClose}>
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-slate-200 px-4">
+          <Search className="h-4 w-4 text-slate-400" />
+          <input
+            ref={input}
+            value={q}
+            onChange={(e) => { setQ(e.target.value); setI(0); }}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") { e.preventDefault(); setI((x) => Math.min(list.length - 1, x + 1)); }
+              if (e.key === "ArrowUp") { e.preventDefault(); setI((x) => Math.max(0, x - 1)); }
+              if (e.key === "Enter" && list[i]) onPick(list[i].key);
+            }}
+            placeholder="Jump to… (e.g. colours, menu, events)"
+            aria-label="Search CMS sections"
+            className="h-12 flex-1 bg-transparent text-sm outline-none"
+          />
+          <button type="button" onClick={onClose} aria-label="Close search" className="grid h-8 w-8 place-items-center rounded text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+        </div>
+        <ul className="max-h-[50vh] overflow-y-auto p-2" role="listbox">
+          {list.map((t, k) => (
+            <li key={t.key} role="option" aria-selected={k === i}>
+              <button type="button" onMouseEnter={() => setI(k)} onClick={() => onPick(t.key)} className={cn("flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm", k === i ? "bg-blue-50 text-blue-800" : "text-slate-700")}>
+                <t.icon className="h-4 w-4 text-slate-400" />
+                <span className="font-semibold">{t.label}</span>
+                {t.group ? <span className="ml-auto text-xs text-slate-400">{t.group}</span> : null}
+              </button>
+            </li>
+          ))}
+          {!list.length ? <li className="px-3 py-6 text-center text-sm text-slate-400">No matches.</li> : null}
+        </ul>
       </div>
     </div>
   );

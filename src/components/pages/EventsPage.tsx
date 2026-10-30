@@ -12,11 +12,14 @@ import { Loading } from "@/components/site/LoadState";
 import { SplitWords } from "@/components/motion/SplitWords";
 import { todayISO } from "@/lib/format";
 import { useContent } from "@/lib/useContent";
+import { useCopy } from "@/lib/site";
+import { PageLayout } from "@/components/site/PageLayout";
 import { cn } from "@/lib/cn";
 import { Dropdown } from "@/components/ui/Dropdown";
 
 export function EventsPage() {
   const events = useContent("events");
+  const tx = useCopy();
   const [cat, setCat] = useState("All");
   const [view, setView] = useState<"month" | "list">("month");
   const [month, setMonth] = useState(() => new Date());
@@ -41,14 +44,12 @@ export function EventsPage() {
     document.getElementById("calendar")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  return (
-    <div>
-      <PageHero page="events" eyebrow="Events" title="What's on this *season*" intro="Tap any event to see the details and add it to your calendar." />
-
-      {/* upcoming as round badges with names underneath */}
+  const sections: Record<string, React.ReactNode> = {
+    hero: <PageHero page="events" eyebrow="Events" title="What's on this *season*" intro="Tap any event to see the details and add it to your calendar." />,
+    upcoming: (
       <Container className="mt-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="font-display text-3xl font-extrabold sm:text-5xl"><SplitWords text="Coming *up*" /></h2>
+          <h2 className="font-display text-3xl font-extrabold sm:text-5xl"><SplitWords text={tx("events.upcoming.title")} /></h2>
           <CalendarSync events={upcomingList} />
         </div>
         {!events ? <Loading label="Loading events…" /> : null}
@@ -58,9 +59,11 @@ export function EventsPage() {
               <EventBubble e={e} onClick={() => jump(e.date)} active={day === e.date} size={150} />
             </li>
           ))}
-          {events && !upcomingList.length ? <li className="card p-6 text-lg text-ink/60">No upcoming events yet — check back soon.</li> : null}
+          {events && !upcomingList.length ? <li className="card p-6 text-lg text-ink/60">{tx("events.upcoming.empty")}</li> : null}
         </ul>
       </Container>
+    ),
+    calendar: (
 
       <Container className="mt-14">
         <div id="calendar" className="flex scroll-mt-28 flex-wrap items-center justify-between gap-3">
@@ -123,10 +126,10 @@ export function EventsPage() {
                 <div className="mt-4 grid gap-4 md:grid-cols-2">{evs.map((e) => <EventCard key={e.id} e={e} />)}</div>
               </section>
             ))}
-            {!upcomingList.length ? <p className="card p-6 text-lg text-ink/60">No upcoming events yet.</p> : null}
+            {!upcomingList.length ? <p className="card p-6 text-lg text-ink/60">{tx("events.upcoming.empty")}</p> : null}
             {past.length ? (
               <section>
-                <h2 className="font-display text-3xl font-extrabold">Past events</h2>
+                <h2 className="font-display text-3xl font-extrabold">{tx("events.past.title")}</h2>
                 <ul className="mt-6 flex flex-wrap gap-6 opacity-80">
                   {past.map((e) => (
                     <li key={e.id}><EventBubble e={e} size={110} onClick={() => jump(e.date)} /></li>
@@ -137,6 +140,11 @@ export function EventsPage() {
           </div>
         ) : null}
       </Container>
+    ),
+  };
+  return (
+    <div>
+      <PageLayout page="events" sections={sections} />
     </div>
   );
 }

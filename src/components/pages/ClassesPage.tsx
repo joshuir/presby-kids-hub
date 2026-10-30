@@ -4,21 +4,23 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, DoorOpen, User } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
+import { PageLayout } from "@/components/site/PageLayout";
 import { Reveal } from "@/components/ui/Reveal";
 import { GroupArt } from "@/components/art/Illustrations";
 import { Loading } from "@/components/site/LoadState";
 import { classLessons } from "@/lib/format";
-import { parts, useSettings } from "@/lib/site";
+import { parts, useCopy, useSettings } from "@/lib/site";
 import { useContent } from "@/lib/useContent";
 
 export function ClassesPage() {
   const s = useSettings();
+  const t = useCopy();
   const classes = useContent("classes");
   const lessons = useContent("lessons") ?? [];
   const teachers = useContent("teachers") ?? [];
   const groups = s.groups.map(parts);
-  return (
-    <div>
+  const sections: Record<string, React.ReactNode> = {
+    hero: (
       <PageHero page="classes" eyebrow="Classes" title="Find your child's class" intro="Ages 3 to 13, grouped so every lesson fits.">
         <nav aria-label="Age groups" className="flex flex-wrap gap-2">
           {groups.map(([key, label, ages]) => (
@@ -28,6 +30,10 @@ export function ClassesPage() {
           ))}
         </nav>
       </PageHero>
+    ),
+    groups: (
+      <>
+
       {!classes ? <Loading label="Loading classes…" /> : null}
       <div className="grid gap-20">
         {groups.map(([key, label, ages, desc]) => {
@@ -66,7 +72,7 @@ export function ClassesPage() {
                           {names.length ? <span className="inline-flex items-center gap-1"><User className="h-4 w-4" aria-hidden /> With {names.join(" & ")}</span> : null}
                           <span className="inline-flex items-center gap-1"><DoorOpen className="h-4 w-4" aria-hidden /> {c.room}</span>
                         </div>
-                        <span className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold text-blueBrand-700">Open class page <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden /></span>
+                        <span className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold text-blueBrand-700">{t("classes.openButton")} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" aria-hidden /></span>
                       </Link>
                     );
                   })}
@@ -76,6 +82,12 @@ export function ClassesPage() {
           );
         })}
       </div>
+      </>
+    ),
+  };
+  return (
+    <div>
+      <PageLayout page="classes" sections={sections} />
     </div>
   );
 }

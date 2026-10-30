@@ -1,4 +1,4 @@
-import type { CollectionName, LeaderboardDoc, MascotDoc, ProductDoc } from "../types";
+import type { BlockDoc, CollectionName, CustomPageDoc, LeaderboardDoc, MascotDoc, ProductDoc } from "../types";
 import {
   seedClasses,
   seedEvents,
@@ -173,7 +173,44 @@ export const seedProducts: ProductDoc[] = [
 
 export const seedLeaderboard: LeaderboardDoc[] = [];
 
+/** Starter blocks — reusable sections admins can drop onto any page or custom page. */
+export const seedBlocks: BlockDoc[] = [
+  {
+    id: "volunteer-intro", title: "Volunteer — intro", type: "imageText", eyebrow: "Serve with us",
+    heading: "Help children meet Jesus every Sunday",
+    body: "We are always grateful for teachers, helpers, musicians and welcomers. Every volunteer is safeguarding-checked and trained, and you never serve alone.",
+    image: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=1200&q=80",
+    buttons: ["Talk to us|/contact/?subject=Volunteering%20as%20a%20teacher|primary"], background: "white", imageSide: "right", status: "published",
+  },
+  {
+    id: "volunteer-roles", title: "Volunteer — roles", type: "cards", eyebrow: "Ways to help", heading: "Find a role that fits",
+    items: [
+      "Class teacher|Lead a Bible story and activity with a small group, once or twice a month.||",
+      "Class helper|Support a teacher with crafts, snacks and settling in new children.||",
+      "Worship team|Lead songs with actions for our youngest classes.||",
+      "Welcome desk|Greet families, help with registration and answer questions.||",
+    ],
+    background: "paper", align: "center", status: "published",
+  },
+  {
+    id: "volunteer-cta", title: "Volunteer — call to action", type: "cta", heading: "Ready to start?",
+    body: "Send us a message and our coordinator will arrange a friendly chat and your safeguarding check.",
+    buttons: ["Send a message|/contact/#form-title|sun", "WhatsApp us|https://wa.me/233200000000|ghost"], background: "brand", align: "center", status: "published",
+  },
+];
+
+export const seedCustomPages: CustomPageDoc[] = [
+  {
+    id: "volunteer", title: "Volunteer with us", slug: "volunteer", eyebrow: "Get involved",
+    intro: "Teachers, helpers, musicians and welcomers make our Sundays possible.",
+    heroImage: "", blocks: ["volunteer-intro", "volunteer-roles", "volunteer-cta"],
+    seoDescription: "Volunteer with the Presbyterian Children's Ministry in Accra.", status: "published",
+  },
+];
+
 export const SEEDS: Record<CollectionName, Array<{ id: string }>> = {
+  blocks: seedBlocks,
+  custompages: seedCustomPages,
   settings: seedSettings,
   teachers: seedTeachers,
   posts: seedPosts,

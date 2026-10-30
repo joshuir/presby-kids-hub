@@ -20,7 +20,8 @@ import { Faqs } from "@/components/blocks/Faqs";
 import { Newsletter } from "@/components/blocks/Newsletter";
 import { Garment } from "@/components/shop/Garment";
 import { Hero } from "./Hero";
-import { parts, useSettings } from "@/lib/site";
+import { parts, useCopy, useSettings } from "@/lib/site";
+import { PageLayout } from "@/components/site/PageLayout";
 import { useContent } from "@/lib/useContent";
 import { classLessons } from "@/lib/format";
 
@@ -80,6 +81,7 @@ function GamesBuddy() {
 
 export function HomePage() {
   const s = useSettings();
+  const t = useCopy();
   const classes = useContent("classes") ?? [];
   const lessons = useContent("lessons") ?? [];
   const events = useContent("events") ?? [];
@@ -101,12 +103,10 @@ export function HomePage() {
   const albums = gallery.filter((g) => g.featured === "yes");
   const product = products[0];
 
-  return (
-    <div>
-      <Hero />
-      <PhotoWall />
-
-      {/* welcome + stats */}
+  const sections: Record<string, React.ReactNode> = {
+    hero: <Hero />,
+    photowall: <PhotoWall />,
+    welcome: (
       <Container className="mt-4">
         <div className="grid gap-4 lg:grid-cols-[1.1fr_1.4fr]">
           <Reveal className="card relative overflow-hidden p-6 sm:p-8" >
@@ -115,7 +115,7 @@ export function HomePage() {
             <p className="mt-3 text-lg leading-8 text-ink/70">{s.welcomeText}</p>
             <div className="mt-6 flex items-center gap-3 border-t border-ink/5 pt-5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/logo.png" alt="" width={40} height={45} />
+              <img src={t("home.welcome.logo") || s.logoUrl || "/brand/logo.png"} alt="" width={40} height={45} className="h-auto w-10 object-contain" />
               <div>
                 <div className="font-bold">{s.welcomeName}</div>
                 <div className="text-sm text-ink/55">{s.welcomeRole}</div>
@@ -125,8 +125,8 @@ export function HomePage() {
           <Reveal className="h-full"><Stats /></Reveal>
         </div>
       </Container>
-
-      {/* sunday */}
+    ),
+    sunday: (
       <Container className="mt-24">
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <Reveal>
@@ -137,16 +137,16 @@ export function HomePage() {
               </div>
               <div data-parallax="-0.35" className="absolute -bottom-6 right-0 w-[40%] overflow-hidden rounded-[1.6rem] border-[6px] border-cream shadow-xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={kid("girlLaugh", 500, 600)} alt="" className="aspect-[5/6] w-full object-cover" />
+                <img src={t("home.sunday.photo2") ? sized(t("home.sunday.photo2"), 500, 600) : kid("girlLaugh", 500, 600)} alt="" className="aspect-[5/6] w-full object-cover" />
               </div>
               <div data-parallax="-0.6" className="absolute -left-3 top-6 rounded-2xl bg-white px-4 py-3 shadow-xl">
-                <div className="text-xs font-extrabold uppercase tracking-wider text-blueBrand-600">Every Sunday</div>
-                <div className="font-display text-lg font-extrabold">9:00 – 10:45 am</div>
+                <div className="text-xs font-extrabold uppercase tracking-wider text-blueBrand-600">{t("home.sunday.badgeLabel")}</div>
+                <div className="font-display text-lg font-extrabold">{t("home.sunday.badgeTime")}</div>
               </div>
             </div>
           </Reveal>
           <div>
-            <SectionHeading eyebrow="Our children's service" title={s.sundayTitle} intro={s.sundayIntro} tone="sun" />
+            <SectionHeading eyebrow={t("home.sunday.eyebrow")} title={s.sundayTitle} intro={s.sundayIntro} tone="sun" />
             <Reveal className="mt-6 grid gap-3 sm:grid-cols-2">
               {s.sundaySteps.map(parts).map(([t, d], i) => {
                 const Icon = STEP_ICONS[i % 4];
@@ -159,14 +159,14 @@ export function HomePage() {
                 );
               })}
             </Reveal>
-            <Link href="/about/" className="btn btn-ghost mt-6" data-magnetic>More about us <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+            <Link href={t("home.sunday.buttonUrl") || "/about/"} className="btn btn-ghost mt-6" data-magnetic>{t("home.sunday.button")} <ArrowRight className="h-4 w-4" aria-hidden /></Link>
           </div>
         </div>
       </Container>
-
-      {/* classes */}
+    ),
+    classes: (
       <Container className="mt-24">
-        <SectionHeading eyebrow="Classes" title="A class for every age" intro="Four groups. Nine classes. One Bible story each week." />
+        <SectionHeading eyebrow={t("home.classes.eyebrow")} title={t("home.classes.title")} intro={t("home.classes.intro")} />
         <Reveal watch={classes.length} className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {s.groups.map(parts).map(([key, label, ages, desc, photo]) => (
             <Link key={key} data-stagger data-tilt="5" data-cursor="Explore" href={`/classes/#${key}`} className="group card overflow-hidden">
@@ -193,10 +193,10 @@ export function HomePage() {
           ))}
         </Reveal>
       </Container>
-
-      {/* events */}
+    ),
+    events: (
       <Container className="mt-24">
-        <SectionHeading eyebrow="Coming up" title="Upcoming activities" intro="Tap a date to see what's on." action={{ href: "/events/", label: "Events calendar" }} tone="coral" />
+        <SectionHeading eyebrow={t("home.events.eyebrow")} title={t("home.events.title")} intro={t("home.events.intro")} action={{ href: "/events/", label: t("home.events.action") }} tone="coral" />
         <div className="mt-8 grid items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
           <MonthCalendar events={events} month={month} onMonth={setMonth} selected={day} onSelect={setDay} compact />
           <div className="grid gap-3">
@@ -204,14 +204,13 @@ export function HomePage() {
               {day ? new Date(day + "T12:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : monthEvents.length ? `In ${month.toLocaleDateString("en-GB", { month: "long" })}` : "Next up"}
             </div>
             {shown.map((e) => <EventCard key={e.id} e={e} />)}
-            {!shown.length ? <p className="card p-6 text-ink/55">Nothing planned yet — check back soon.</p> : null}
+            {!shown.length ? <p className="card p-6 text-ink/55">{t("home.events.empty")}</p> : null}
             <Link href="/events/" className="text-sm font-bold text-blueBrand-700">Full calendar →</Link>
           </div>
         </div>
       </Container>
-
-      {/* featured lesson */}
-      {featured ? (
+    ),
+    lesson: featured ? (
         <section className="relative mt-24 overflow-hidden bg-ink py-16 text-white sm:py-24">
           <span aria-hidden className="pointer-events-none absolute -left-24 top-0 h-[28rem] w-[28rem] rounded-full bg-blueBrand-600/30 blur-3xl" />
           <span aria-hidden className="pointer-events-none absolute -right-20 bottom-0 h-72 w-72 rounded-full bg-sun/15 blur-3xl" />
@@ -223,9 +222,9 @@ export function HomePage() {
                 <Eyebrow tone="white">Featured Bible lesson · {new Date(featured.lessonDate + "T12:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" })}</Eyebrow>
                 <h2 className="mt-3 font-display text-4xl font-extrabold sm:text-6xl">{featured.title}</h2>
                 <p className="mt-2 text-lg font-semibold text-white/80">{featured.bibleRef} · {featured.topic}</p>
-                <p className="mt-3 max-w-lg text-white/75">Every class explores this passage on Sunday. Keep the conversation going at home.</p>
+                <p className="mt-3 max-w-lg text-white/75">{t("home.lesson.intro")}</p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link href={`/classes/lesson/?c=${featured.classId}&l=${featured.slug}`} className="btn btn-sun" data-magnetic>Read the lesson</Link>
+                  <Link href={`/classes/lesson/?c=${featured.classId}&l=${featured.slug}`} className="btn btn-sun" data-magnetic>{t("home.lesson.button")}</Link>
                 </div>
               </div>
               <figure className="rounded-[1.6rem] bg-white p-6 text-ink shadow-[8px_8px_0_#FFC53D] sm:p-8">
@@ -241,18 +240,17 @@ export function HomePage() {
           </Reveal>
           </Container>
         </section>
-      ) : null}
-
-      {/* kids zone */}
+      ) : null,
+    kids: (
       <Container className="mt-24">
-        <SectionHeading eyebrow="Kids Zone" title="Play, learn and wear your faith" intro="Bible games that grow with your child, and a clothing collection you can try in every colour." tone="mint" />
+        <SectionHeading eyebrow={t("home.kids.eyebrow")} title={t("home.kids.title")} intro={t("home.kids.intro")} tone="mint" />
         <Reveal className="mt-8 grid gap-4 lg:grid-cols-2">
           <Link data-stagger data-tilt="4" data-cursor="Play" href="/games/" className="group relative overflow-hidden rounded-[2rem] bg-[#58CC02] p-6 text-white shadow-[0_6px_0_#46A302] sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <span className="eyebrow bg-white/20 text-white"><Gamepad2 className="h-3.5 w-3.5" aria-hidden /> Bible Games</span>
-                <h3 className="mt-3 font-display text-3xl font-extrabold sm:text-4xl">Climb the Bible path</h3>
-                <p className="mt-2 max-w-sm text-white/85">{units.length || 6} story units, four levels each, streaks, badges and a mascot who cheers you on.</p>
+                <h3 className="mt-3 font-display text-3xl font-extrabold sm:text-4xl">{t("home.kids.gamesTitle")}</h3>
+                <p className="mt-2 max-w-sm text-white/85">{t("home.kids.gamesText")}</p>
               </div>
               <span className="-mr-2 -mt-4 shrink-0" aria-hidden><GamesBuddy /></span>
             </div>
@@ -261,15 +259,15 @@ export function HomePage() {
                 <span key={u.id} className="grid h-12 w-12 place-items-center rounded-full bg-white/20 text-2xl shadow-[0_4px_0_rgba(0,0,0,.15)]">{u.icon}</span>
               ))}
             </div>
-            <span className="btn mt-6 bg-white text-[#46A302]">Start playing <ArrowRight className="h-4 w-4" aria-hidden /></span>
+            <span className="btn mt-6 bg-white text-[#46A302]">{t("home.kids.gamesButton")} <ArrowRight className="h-4 w-4" aria-hidden /></span>
           </Link>
           <Link data-stagger data-tilt="4" data-cursor="Shop" href="/collection/" className="group relative overflow-hidden rounded-[2rem] bg-[#EEEDE8] p-6 sm:p-8">
             <div className="grid items-center gap-4 sm:grid-cols-[1fr_190px]">
               <div>
                 <span className="eyebrow bg-white text-ink"><Shirt className="h-3.5 w-3.5" aria-hidden /> Clothing Collection</span>
-                <h3 className="mt-3 font-display text-3xl font-extrabold sm:text-4xl">Wear your faith</h3>
-                <p className="mt-2 max-w-sm text-ink/65">Tees and hoodies on the rack — tap a colour tag, flip front and back, or shuffle.</p>
-                <span className="btn btn-dark mt-6">See the collection <ArrowRight className="h-4 w-4" aria-hidden /></span>
+                <h3 className="mt-3 font-display text-3xl font-extrabold sm:text-4xl">{t("home.kids.shopTitle")}</h3>
+                <p className="mt-2 max-w-sm text-ink/65">{t("home.kids.shopText")}</p>
+                <span className="btn btn-dark mt-6">{t("home.kids.shopButton")} <ArrowRight className="h-4 w-4" aria-hidden /></span>
               </div>
               {product ? (
                 <div style={{ ["--garment" as string]: product.colorways[0]?.hex }} className="mx-auto w-40 transition duration-500 group-hover:-rotate-6 sm:w-full">
@@ -280,10 +278,10 @@ export function HomePage() {
           </Link>
         </Reveal>
       </Container>
-
-      {/* feed */}
+    ),
+    feed: (
       <Container className="mt-24">
-        <SectionHeading eyebrow="From the feed" title="Latest from our classrooms" action={{ href: "/blog/", label: "Open the feed" }} />
+        <SectionHeading eyebrow={t("home.feed.eyebrow")} title={t("home.feed.title")} action={{ href: "/blog/", label: t("home.feed.action") }} />
         <Reveal watch={feed.length} className="mt-8 grid gap-4 md:grid-cols-3">
           {feed.map((p, i) => (
             <div key={p.id} data-stagger>
@@ -292,43 +290,47 @@ export function HomePage() {
           ))}
         </Reveal>
       </Container>
-
-      {/* gallery — auto-moving rail */}
+    ),
+    gallery: (
       <div className="mt-28">
         <Container>
-          <SectionHeading eyebrow="Gallery" title="Moments worth remembering" action={{ href: "/gallery/", label: "View gallery" }} tone="sun" />
+          <SectionHeading eyebrow={t("home.gallery.eyebrow")} title={t("home.gallery.title")} action={{ href: "/gallery/", label: t("home.gallery.action") }} tone="sun" />
         </Container>
         <div className="mt-8">
           <GalleryRail albums={albums.length ? albums : gallery} title="" />
         </div>
       </div>
-
-      {/* teachers */}
+    ),
+    team: (
       <Container className="mt-24">
-        <SectionHeading eyebrow="Our teachers" title="Caring people, trained and checked" intro="Every child known by name." tone="mint" />
+        <SectionHeading eyebrow={t("home.team.eyebrow")} title={t("home.team.title")} intro={t("home.team.intro")} tone="mint" />
         <div className="mt-4"><TeamRoster heading={false} filter={false} limit={5} /></div>
       </Container>
-
-      <AppPromo />
-
-      {/* socials */}
+    ),
+    app: <AppPromo />,
+    social: (
       <Container className="mt-24">
-        <SectionHeading eyebrow="Follow our journey" title="Find us everywhere you are" tone="coral" />
+        <SectionHeading eyebrow={t("home.social.eyebrow")} title={t("home.social.title")} tone="coral" />
         <div className="mt-8"><Socials /></div>
       </Container>
-
-      {/* faqs */}
+    ),
+    faqs: (
       <Container className="mt-24">
         <div className="grid gap-8 [&>*]:min-w-0 lg:grid-cols-[1fr_1.6fr]">
           <div>
-            <SectionHeading eyebrow="FAQs" title="Questions parents ask" intro="Still wondering about something? Send us a message — a real person will reply." />
+            <SectionHeading eyebrow={t("home.faqs.eyebrow")} title={t("home.faqs.title")} intro={t("home.faqs.intro")} />
             <HandHeart className="mt-8 hidden h-24 w-24 text-blueBrand-200 lg:block" aria-hidden />
           </div>
           <Faqs />
         </div>
       </Container>
+    ),
+    newsletter: <Newsletter />,
+  };
 
-      <Newsletter />
+  return (
+    <div>
+      <PageLayout page="home" sections={sections} />
     </div>
   );
 }

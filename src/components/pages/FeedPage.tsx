@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
+import { PageLayout } from "@/components/site/PageLayout";
 import { PostCard } from "@/components/blocks/PostCard";
 import { Loading } from "@/components/site/LoadState";
 import { Socials } from "@/components/blocks/Socials";
@@ -43,9 +44,9 @@ export function FeedPage() {
     if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
   }, [posts]);
 
-  return (
-    <div>
-      <PageHero page="blog" eyebrow="From our classrooms" title="Stories, verses & *news*" intro="Weekly verses, photos from class and news for families — straight from our teachers." />
+  const sections: Record<string, React.ReactNode> = {
+    hero: <PageHero page="blog" eyebrow="From our classrooms" title="Stories, verses & *news*" intro="Weekly verses, photos from class and news for families — straight from our teachers." />,
+    feed: (
       <Container className="grid items-start gap-6 lg:grid-cols-[1fr_360px]">
         <div id="feed" className="min-w-0 scroll-mt-28">
           {/* sticky controls — compact on phones */}
@@ -115,6 +116,11 @@ export function FeedPage() {
           </div>
         </aside>
       </Container>
+    ),
+  };
+  return (
+    <div>
+      <PageLayout page="blog" sections={sections} />
     </div>
   );
 }

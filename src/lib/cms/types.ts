@@ -17,11 +17,13 @@ export type CollectionName =
   | "gallery"
   | "faqs"
   | "milestones"
-  | "heroes";
+  | "heroes"
+  | "blocks"
+  | "custompages";
 
 export const COLLECTIONS: CollectionName[] = [
   "classes", "lessons", "questions", "units", "mascots", "products", "leaderboard",
-  "settings", "teachers", "posts", "events", "gallery", "faqs", "milestones", "heroes",
+  "settings", "teachers", "posts", "events", "gallery", "faqs", "milestones", "heroes", "blocks", "custompages",
 ];
 
 export type BaseDoc = {
@@ -173,8 +175,98 @@ export type LeaderboardDoc = BaseDoc & {
   status: Status;
 };
 
+/** One entry in the header menu. */
+export type MenuItem = {
+  label: string;
+  href: string;
+  /** lucide icon name, e.g. "Home" */
+  icon?: string;
+  /** "classes" shows the classes mega-menu instead of a plain dropdown */
+  mega?: string;
+  hidden?: boolean;
+  children?: { label: string; href: string; description?: string; icon?: string; hidden?: boolean }[];
+};
+
+/** One section in a page layout. id is a built-in section or "block:<blockId>". */
+export type LayoutItem = { id: string; hidden?: boolean };
+
+/** A reusable content block admins can place on any page. */
+export type BlockDoc = BaseDoc & {
+  title: string;
+  /** text | imageText | cta | cards | video | embed | gallery | buttons | social | spacer */
+  type: string;
+  eyebrow?: string;
+  heading?: string;
+  body?: string;
+  image?: string;
+  images?: string[];
+  videoUrl?: string;
+  embedUrl?: string;
+  /** "Label|URL|style" — style: primary | ghost | dark | sun */
+  buttons?: string[];
+  /** cards: "Title|Text|Image URL|Link" */
+  items?: string[];
+  /** white | paper | brand | dark | sun */
+  background?: string;
+  /** left | center */
+  align?: string;
+  /** image side for imageText: left | right */
+  imageSide?: string;
+  status: Status;
+};
+
+/** A page the admin creates (served at /p/?s=slug). */
+export type CustomPageDoc = BaseDoc & {
+  title: string;
+  slug: string;
+  eyebrow?: string;
+  intro?: string;
+  heroImage?: string;
+  /** block ids in display order */
+  blocks: string[];
+  seoDescription?: string;
+  status: Status;
+};
+
 export type SiteSettingsDoc = BaseDoc & {
   status: Status;
+  /* ---- design ---- */
+  themePrimary?: string;
+  themeAccent?: string;
+  themeCoral?: string;
+  themeMint?: string;
+  themeInk?: string;
+  themeBg?: string;
+  themeSurface?: string;
+  fontHeading?: string;
+  fontBody?: string;
+  /** rounded | soft | sharp */
+  themeRadius?: string;
+  /** 3d | flat | outline */
+  buttonStyle?: string;
+  logoUrl?: string;
+  /* ---- structure ---- */
+  menu?: MenuItem[];
+  ctaUrl?: string;
+  showHeaderCta?: string;
+  layouts?: Record<string, LayoutItem[]>;
+  /** overrides for any registered text / image on the site (see lib/copy.ts) */
+  copy?: Record<string, string>;
+  showVisitCard?: string;
+  legalLinks?: string[];
+  /* ---- footer ---- */
+  footerBg?: string;
+  footerText?: string;
+  footerAccent?: string;
+  /** slide | glow | lift | none */
+  footerHoverEffect?: string;
+  showFooterWordmark?: string;
+  footerWordmark?: string;
+  /** trail | wave | color | none */
+  footerWordmarkEffect?: string;
+  footerWordmarkColors?: string[];
+  footerWordmarkFont?: string;
+  footerWordmarkColor?: string;
   siteName: string;
   churchName: string;
   footerBlurb: string;
@@ -409,7 +501,11 @@ export type DocFor<C extends CollectionName> = C extends "classes"
                           ? MilestoneDoc
                           : C extends "heroes"
                             ? HeroDoc
-                            : LeaderboardDoc;
+                            : C extends "blocks"
+                              ? BlockDoc
+                              : C extends "custompages"
+                                ? CustomPageDoc
+                                : LeaderboardDoc;
 /** Content is live when published, or scheduled with a publish time in the past. */
 export function isLive(doc: { status?: Status; publishAt?: string }, now = Date.now()) {
   if (doc.status === "published") return true;

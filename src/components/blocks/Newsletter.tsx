@@ -5,10 +5,11 @@ import { useState } from "react";
 import { MailCheck } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { submitForm } from "@/lib/cms/client";
-import { useSettings } from "@/lib/site";
+import { useCopy, useSettings } from "@/lib/site";
 
 export function Newsletter() {
   const s = useSettings();
+  const t = useCopy();
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [err, setErr] = useState("");
   return (
@@ -45,11 +46,11 @@ export function Newsletter() {
               <input id="nl-name" name="name" placeholder="Your name" autoComplete="name" className="h-12 rounded-full bg-paper px-5 outline-none ring-1 ring-ink/10 focus:ring-2 focus:ring-blueBrand-500" />
               <label className="sr-only" htmlFor="nl-email">Email address</label>
               <input id="nl-email" name="email" type="email" required placeholder="Email address" autoComplete="email" className="h-12 rounded-full bg-paper px-5 outline-none ring-1 ring-ink/10 focus:ring-2 focus:ring-blueBrand-500" />
-              <button className="btn btn-primary" disabled={state === "busy"}>{state === "busy" ? "Subscribing…" : "Subscribe"}</button>
+              <button className="btn btn-primary" disabled={state === "busy"}>{state === "busy" ? "Subscribing…" : t("newsletter.button")}</button>
             </div>
             {state === "error" ? <p className="text-sm text-red-700">{err}</p> : null}
             <p className="text-xs text-ink/50">
-              Monthly family updates only. We never share your details. <Link className="underline" href="/privacy/">Privacy</Link>
+              {t("newsletter.note")} <Link className="underline" href="/privacy/">Privacy</Link>
             </p>
           </form>
         )}

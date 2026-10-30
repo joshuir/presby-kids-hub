@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { ArrowRight, BookOpen, ShieldCheck, Users } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { HeroArt } from "@/components/art/Illustrations";
-import { parts, useSettings } from "@/lib/site";
+import { parts, useSettings, useCopy } from "@/lib/site";
 import { useContent } from "@/lib/useContent";
 import { classLessons } from "@/lib/format";
 
@@ -59,6 +59,7 @@ export function Hero() {
     return () => ctx.revert();
   }, []);
 
+  const t = useCopy();
   const [title1, ...rest] = s.heroTitle.split(" ");
   return (
     <section ref={ref} className="relative overflow-hidden">
@@ -71,12 +72,12 @@ export function Hero() {
           <h1 className="mt-5 font-display text-[2.9rem] font-extrabold leading-[0.98] sm:text-7xl lg:text-[5.4rem]">
             <span data-h style={{ "--i": 1 } as React.CSSProperties} className="block">{[title1, ...rest].join(" ")}</span>
             <span data-h style={{ "--i": 2 } as React.CSSProperties} className="block min-h-[1em]"><TypedWord words={s.heroWords} /></span>
-            <span data-h style={{ "--i": 3 } as React.CSSProperties} className="block"><span className="squiggle text-blueBrand-600">God&apos;s Word</span></span>
+            <span data-h style={{ "--i": 3 } as React.CSSProperties} className="block"><span className="squiggle text-blueBrand-600">{t("home.hero.highlight")}</span></span>
           </h1>
           <p data-h style={{ "--i": 4 } as React.CSSProperties} className="mt-6 max-w-lg text-lg leading-8 text-ink/65">{s.heroSubtitle}</p>
           <div data-h style={{ "--i": 5 } as React.CSSProperties} className="mt-7 flex flex-wrap gap-3">
-            <Link href="/classes/" className="btn btn-primary" data-magnetic>Explore Our Classes <ArrowRight className="h-4 w-4" aria-hidden /></Link>
-            <Link href="/about/#team" className="btn btn-ghost" data-magnetic>Meet Our Teachers <Users className="h-4 w-4" aria-hidden /></Link>
+            <Link href={t("home.hero.cta1Url") || "/classes/"} className="btn btn-primary" data-magnetic>{t("home.hero.cta1")} <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+            <Link href={t("home.hero.cta2Url") || "/about/#team"} className="btn btn-ghost" data-magnetic>{t("home.hero.cta2")} <Users className="h-4 w-4" aria-hidden /></Link>
           </div>
           <ul data-h style={{ "--i": 6 } as React.CSSProperties} className="mt-7 flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:gap-x-6">
             {s.serviceTimes.map(parts).map(([a, b]) => (
@@ -94,7 +95,7 @@ export function Hero() {
           )}
           <div data-chip style={{ "--i": 0 } as React.CSSProperties} className="absolute -left-3 -top-4 grid h-24 w-24 place-items-center rounded-full bg-white shadow-card ring-4 ring-sun/60 sm:-left-6 sm:h-28 sm:w-28">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/logo.png" alt="Presbyterian Children's Ministry crest" width={72} height={81} className="h-[72%] w-auto" />
+            <img src={s.logoUrl || "/brand/logo.png"} alt={`${s.siteName} crest`} width={72} height={81} className="h-[72%] w-auto" />
           </div>
           <div data-chip style={{ "--i": 1 } as React.CSSProperties} className="absolute -right-2 top-6 flex items-center gap-2 rounded-2xl bg-ink px-3 py-2.5 text-white shadow-card sm:-right-6">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-sun text-ink"><Users className="h-5 w-5" aria-hidden /></span>

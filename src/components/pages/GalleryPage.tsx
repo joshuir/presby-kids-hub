@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Images, Play, Search, X } from "lucide-react";
 import { Container } from "@/components/site/Container";
 import { PageHero } from "@/components/site/PageHero";
+import { PageLayout } from "@/components/site/PageLayout";
 import { Loading } from "@/components/site/LoadState";
 import { VideoEmbed } from "@/components/ui/VideoEmbed";
 import { GalleryRail, albumPhotos } from "@/components/gallery/GalleryRail";
@@ -225,9 +226,10 @@ function GalleryInner() {
   if (!albums) return <Loading label="Loading albums…" />;
   if (album) return <AlbumView key={album.id} album={album} all={sorted} photo={photo != null && !isNaN(Number(photo)) ? Number(photo) : undefined} />;
 
-  return (
-    <div>
-      <PageHero page="gallery" eyebrow="Gallery" title="Moments of *joy*" intro="Group photos only — always shared with parental consent." />
+  const sections: Record<string, React.ReactNode> = {
+    hero: <PageHero page="gallery" eyebrow="Gallery" title="Moments of *joy*" intro="Group photos only — always shared with parental consent." />,
+    main: (
+      <>
 
       <div className="mt-6">
         <GalleryRail albums={sorted} title="" />
@@ -343,6 +345,13 @@ function GalleryInner() {
           </p>
         ) : null}
       </Container>
+    
+      </>
+    ),
+  };
+  return (
+    <div>
+      <PageLayout page="gallery" sections={sections} />
     </div>
   );
 }

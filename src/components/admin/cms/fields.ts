@@ -19,6 +19,8 @@ export type FieldType =
   | "ref"
   | "refs"
   | "imageList"
+  /** an ordered list of references (add, reorder, remove) */
+  | "orderedRefs"
   /** not a value: a titled divider that groups the fields below it */
   | "heading";
 
@@ -287,6 +289,31 @@ export const SCHEMAS: Record<Exclude<CollectionName, "leaderboard">, Field[]> = 
     { key: "imageCheer", label: "Custom artwork — celebrating", type: "media", accept: "image/*" },
     { key: "imageThink", label: "Custom artwork — thinking", type: "media", accept: "image/*" },
   ],
+  blocks: [
+    { key: "title", label: "Block name (only admins see this)", type: "text", required: true },
+    { key: "type", label: "Block type", type: "select", options: ["text", "imageText", "cta", "cards", "buttons", "video", "embed", "gallery", "social", "spacer"], help: "text = heading + paragraphs · imageText = picture beside text · cta = coloured banner with buttons · cards = grid of cards · video = YouTube/Vimeo/upload · embed = map, form, social post or any https page · gallery = photo grid · social = your social links · spacer = empty gap" },
+    { key: "eyebrow", label: "Small label above the heading", type: "text" },
+    { key: "heading", label: "Heading", type: "text" },
+    { key: "body", label: "Text (new line = new paragraph; **bold**, [link](https://…))", type: "textarea", wide: true },
+    { key: "image", label: "Image (imageText / cta background)", type: "media" },
+    { key: "imageSide", label: "Image side", type: "select", options: ["right", "left"] },
+    { key: "images", label: "Photos (gallery)", type: "imageList", wide: true },
+    { key: "videoUrl", label: "Video (YouTube, Vimeo or upload)", type: "video", wide: true },
+    { key: "embedUrl", label: "Embed link (Google Maps, Facebook page, Instagram/TikTok post, Google Form, any https page)", type: "text", wide: true },
+    { key: "buttons", label: "Buttons — one per line: Label|Link|style (primary, ghost, dark or sun)", type: "lines", wide: true },
+    { key: "items", label: "Cards — one per line: Title|Text|Image link|Card link", type: "lines", wide: true },
+    { key: "background", label: "Background", type: "select", options: ["white", "paper", "brand", "dark", "sun"] },
+    { key: "align", label: "Text alignment", type: "select", options: ["left", "center"] },
+  ],
+  custompages: [
+    { key: "title", label: "Page title", type: "text", required: true },
+    { key: "slug", label: "Web address name (letters, numbers, dashes)", type: "text", required: true, help: "The page lives at /p/?s=this-name. Add it to the menu under Navigation." },
+    { key: "eyebrow", label: "Small label above the title", type: "text" },
+    { key: "intro", label: "Intro text", type: "textarea", wide: true },
+    { key: "heroImage", label: "Hero image (optional)", type: "media" },
+    { key: "blocks", label: "Blocks on this page (in order) — create them under Blocks", type: "orderedRefs", source: "blocks", wide: true },
+    { key: "seoDescription", label: "Search engine description", type: "text", wide: true },
+  ],
   products: [
     { key: "name", label: "Product name", type: "text", required: true, wide: true },
     { key: "category", label: "Category (shop filter)", type: "select", options: ["tee", "hoodie", "longsleeve", "other"], help: "tee = T-shirts · hoodie = Hoodies · longsleeve = Long sleeves & sweats · other = Caps & bags" },
@@ -326,6 +353,8 @@ export function blank(col: CollectionName, extra: Record<string, unknown> = {}):
     events: { title: "", date: today, startTime: "09:00", endTime: "", location: "", description: "", image: "", logo: "", color: "#2563EB", category: "Special days", registerUrl: "" },
     gallery: { title: "", category: "", date: today.slice(0, 7), featured: "no", order: 99, cover: "", description: "", media: [] },
     faqs: { question: "", answer: "", category: "Visiting", order: 99 },
+    blocks: { title: "", type: "text", eyebrow: "", heading: "", body: "", image: "", imageSide: "right", images: [], videoUrl: "", embedUrl: "", buttons: [], items: [], background: "white", align: "left" },
+    custompages: { title: "", slug: "", eyebrow: "", intro: "", heroImage: "", blocks: [], seoDescription: "" },
     milestones: { kind: "milestone", year: String(new Date().getFullYear()), title: "", description: "", image: "", images: [], stat: "", order: 99 },
     products: {
       name: "", category: "tee", price: 0, currency: "GHS", order: 99, description: "", frontPrint: "", backPrint: "",
@@ -341,5 +370,6 @@ export function titleOf(col: CollectionName, d: Record<string, unknown>) {
   if (col === "milestones") return `${d.kind === "achievement" ? `🏆 ${d.stat ?? ""}` : d.year ?? ""} — ${d.title ?? ""}`;
   if (col === "heroes") return `${d.page || d.id}: ${String(d.title ?? "").replace(/\*/g, "")}`;
   if (col === "posts") return String(d.body ?? "").slice(0, 60) || "New post";
+  if (col === "blocks") return String(d.title ?? d.heading ?? "Untitled block");
   return String(d.title ?? d.name ?? d.question ?? d.id ?? "Untitled");
 }

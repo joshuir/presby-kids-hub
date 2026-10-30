@@ -292,7 +292,7 @@ export function MotionDirector() {
   return (
     <>
       <div ref={barRef} aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-[3px] origin-left scale-x-0 bg-gradient-to-r from-blueBrand-500 via-sun to-coral" />
-      <Cursor on={level !== "off" && fx.cursor} />
+      <Cursor on={level !== "off" && fx.cursor && !pathname.startsWith("/admin")} />
       <PointerFx spotlight={level !== "off" && fx.spotlight} scramble={level === "full" && fx.scramble} />
     </>
   );

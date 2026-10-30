@@ -14,7 +14,7 @@ import { useContent } from "@/lib/useContent";
 import { seedHeroes } from "@/lib/cms/seed/content";
 import { useSettings, waLink } from "@/lib/site";
 import { sized } from "@/lib/img";
-import { NAV } from "@/lib/nav";
+import { buildNav } from "@/lib/nav";
 import { cn } from "@/lib/cn";
 import type { HeroDoc } from "@/lib/cms/types";
 
@@ -24,14 +24,14 @@ const ix = (i: number, r?: number) => ({ "--i": i, ...(r !== undefined ? { "--r"
 /** Breadcrumb trail from the menu structure (Home › Section › Page). */
 function useCrumbs(extra?: string) {
   const path = (usePathname() || "/").replace(/\/+$/, "/");
+  const s = useSettings();
   const crumbs: Array<{ href: string; label: string }> = [];
-  for (const n of NAV) {
+  for (const n of buildNav(s.menu)) {
     if (n.href === "/") continue;
     const kids = n.children ?? [];
     const child = kids.find((c) => c.href === path);
     if (path.startsWith(n.href) || child) {
-      if (n.key !== "kids") crumbs.push({ href: n.href, label: n.label });
-      else crumbs.push({ href: "/games/", label: "Kids Zone" });
+      crumbs.push({ href: n.href, label: n.label });
       if (child && child.href !== n.href) crumbs.push({ href: child.href, label: child.label });
       break;
     }
@@ -83,8 +83,11 @@ export function PageHero({
   children,
   crumb,
   className,
+  image,
 }: {
   page: string;
+  /** fallback image when the page has no hero in the CMS (custom pages) */
+  image?: string;
   eyebrow?: string;
   title?: string;
   intro?: string;
@@ -102,8 +105,8 @@ export function PageHero({
   const t = h.title || title || "";
   const eb = h.eyebrow || eyebrow;
   const intr = h.intro || intro;
-  const style = (h.style as string) || (h.image ? "collage" : "plain");
-  const imgs = [h.image, ...(h.images ?? [])].filter(Boolean) as string[];
+  const style = (h.style as string) || (h.image || image ? (h.image ? "collage" : "photo") : "plain");
+  const imgs = [h.image || image, ...(h.images ?? [])].filter(Boolean) as string[];
   const navCrumbs = useCrumbs(crumb);
   const crumbs = navCrumbs.length ? navCrumbs : PAGE_LABEL[page] ? [{ href: "", label: PAGE_LABEL[page] }] : navCrumbs;
   const ref = useRef<HTMLElement>(null);

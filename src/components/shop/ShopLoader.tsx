@@ -6,6 +6,7 @@ import type { ProductDoc } from "@/lib/cms/types";
 import { CollectionShowcase } from "./CollectionShowcase";
 import { LoadError, Loading } from "@/components/site/LoadState";
 import { PageHero } from "@/components/site/PageHero";
+import { PageLayout } from "@/components/site/PageLayout";
 import { ShopGrid } from "./ShopGrid";
 
 export function ShopLoader() {
@@ -31,9 +32,18 @@ export function ShopLoader() {
 
   return (
     <div className="-mt-[76px] bg-[#EEEDE8] pt-[76px]">
-      <PageHero page="collection" eyebrow="Kids Zone · Clothing" title="Wear your *faith*" intro="Choose your colour and size, then request yours." />
-      <CollectionShowcase products={products} ticker={ticker} />
-      <ShopGrid products={products} />
+      <PageLayout
+        page="collection"
+        sections={{
+          hero: <PageHero page="collection" eyebrow="Kids Zone · Clothing" title="Wear your *faith*" intro="Choose your colour and size, then request yours." />,
+          shop: (
+            <>
+              <CollectionShowcase products={products} ticker={ticker} />
+              <ShopGrid products={products} />
+            </>
+          ),
+        }}
+      />
     </div>
   );
 }

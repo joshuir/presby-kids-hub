@@ -295,30 +295,29 @@ function ProductDetail({ product, initialColor = 0, onClose }: { product: Produc
             <span className="font-bold uppercase tracking-wider">Size{size ? `: ${sizeName(size)}` : ""}</span>
             <button type="button" onClick={() => setGuide(true)} className="inline-flex items-center gap-1 font-bold underline underline-offset-4"><Ruler className="h-4 w-4" aria-hidden /> Size guide</button>
           </div>
-          <div className={cn("mt-2 grid grid-cols-3 gap-2", needSize && !size && "animate-[pulse_0.6s_2]")} role="radiogroup" aria-label="Size">
-            {product.sizes.map((z) => {
+          <Dropdown
+            label="Size"
+            hideLabel
+            testId="size-select"
+            placeholder="Choose a size"
+            className={cn("mt-2", needSize && !size && "animate-[pulse_0.6s_2]")}
+            buttonClassName={cn("!min-h-12", needSize && !size && "!ring-2 !ring-red-500")}
+            value={size ?? ""}
+            onChange={(z) => {
+              setSize(z);
+              setNeedSize(false);
+              setQty(1);
+            }}
+            options={product.sizes.map((z) => {
               const n = stockOf(product, z);
-              return (
-                <button
-                  key={z}
-                  type="button"
-                  role="radio"
-                  aria-checked={size === z}
-                  disabled={n <= 0}
-                  onClick={() => {
-                    setSize(z);
-                    setNeedSize(false);
-                    setQty(1);
-                  }}
-                  className={cn("flex min-h-14 flex-col items-center justify-center rounded-lg border px-1 py-1.5 text-sm font-bold leading-tight transition", size === z ? "border-ink bg-ink text-white" : "border-ink/15 hover:border-ink", n <= 0 && "cursor-not-allowed border-ink/10 text-ink/30 line-through")}
-                  aria-label={`${sizeName(z)}${n <= 0 ? " — sold out" : n < 4 ? ` — only ${n} left` : ""}`}
-                >
-                  <span>{sizeName(z)}</span>
-                  <span className={cn("text-[11px] font-semibold", size === z ? "text-white/70" : n <= 0 ? "" : n < 4 ? "text-[#C2410C]" : "text-ink/45")}>{n <= 0 ? "Sold out" : n < 4 ? `${n} left` : "In stock"}</span>
-                </button>
-              );
+              return {
+                value: z,
+                label: `${sizeName(z)}${sizeName(z) !== z ? ` (${z})` : ""}`,
+                hint: n <= 0 ? "Sold out" : n < 4 ? `Only ${n} left` : "In stock",
+                disabled: n <= 0,
+              };
             })}
-          </div>
+          />
           {size && left <= 0 && stockOf(product, size) > 0 ? <p className="mt-2 text-sm font-bold text-[#C2410C]">You already have all {stockOf(product, size)} in your bag.</p> : null}
           {needSize && !size ? <p role="alert" className="mt-2 text-sm font-bold text-red-700">Please choose a size</p> : null}
 
@@ -440,9 +439,10 @@ const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x
 
 function FilterPanel({ products, f, setF, cfgCurrency }: { products: ProductDoc[]; f: Filters; setF: (f: Filters) => void; cfgCurrency: string }) {
   const cats = Array.from(new Set(products.map((p) => p.category)));
-  const sizes = Array.from(new Set(products.flatMap((p) => p.sizes)));
+  const ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "XXXL", "3XL"];
+  const rank = (z: string) => { const i = ORDER.indexOf(z.toUpperCase()); return i >= 0 ? 100 + i : parseInt(z, 10) || 50; };
+  const sizes = Array.from(new Set(products.flatMap((p) => p.sizes))).sort((a, b) => rank(a) - rank(b));
   const colours = Array.from(new Map(products.flatMap((p) => p.colorways.map((c) => [c.name, c.hex] as const))).entries());
-  const chip = (on: boolean) => cn("rounded-full px-3 py-1.5 text-sm font-bold ring-1 transition", on ? "bg-ink text-white ring-ink" : "bg-white ring-ink/15 hover:ring-ink/40");
   return (
     <div className="grid gap-5">
       <Dropdown
@@ -455,14 +455,16 @@ function FilterPanel({ products, f, setF, cfgCurrency }: { products: ProductDoc[
           ...cats.map((c) => ({ value: c, label: CATEGORY_LABEL[c] ?? c, count: products.filter((p) => p.category === c).length })),
         ]}
       />
-      <fieldset>
-        <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.16em] text-ink/50">Size</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {sizes.map((z) => (
-            <button key={z} type="button" aria-pressed={f.sizes.includes(z)} onClick={() => setF({ ...f, sizes: toggle(f.sizes, z) })} className={chip(f.sizes.includes(z))} title={sizeName(z)}>{z}</button>
-          ))}
-        </div>
-      </fieldset>
+      <Dropdown
+        label="Size"
+        testId="shop-size"
+        value={f.sizes[0] ?? ""}
+        onChange={(v) => setF({ ...f, sizes: v ? [v] : [] })}
+        options={[
+          { value: "", label: "All sizes", count: products.length },
+          ...sizes.map((z) => ({ value: z, label: sizeName(z) !== z ? `${sizeName(z)} (${z})` : z, count: products.filter((p) => p.sizes.includes(z)).length })),
+        ]}
+      />
       <Dropdown
         label="Colour"
         testId="shop-colour"

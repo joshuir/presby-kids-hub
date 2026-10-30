@@ -180,6 +180,45 @@ export function FieldEditor({
         </label>
       );
     }
+    case "orderedRefs": {
+      const opts = lookups[field.source ?? ""] ?? [];
+      const cur = Array.isArray(v) ? (v as string[]) : [];
+      const name = (id: string) => opts.find((o) => o.id === id)?.name ?? id;
+      const move = (i: number, d: number) => {
+        const n = [...cur];
+        const j = i + d;
+        if (j < 0 || j >= n.length) return;
+        [n[i], n[j]] = [n[j], n[i]];
+        set(field.key, n);
+      };
+      return (
+        <fieldset className="block">
+          <legend className="mb-1 block text-xs font-bold uppercase tracking-wide text-black/55">{field.label}</legend>
+          <ol className="grid gap-1.5">
+            {cur.map((id, i) => (
+              <li key={id + i} className="flex items-center gap-2 rounded-xl bg-black/[0.03] px-3 py-2 text-sm ring-1 ring-black/5">
+                <span className="w-5 text-xs font-bold text-black/40">{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate font-semibold">{name(id)}</span>
+                <button type="button" aria-label={`Move ${name(id)} up`} disabled={i === 0} onClick={() => move(i, -1)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-30">↑</button>
+                <button type="button" aria-label={`Move ${name(id)} down`} disabled={i === cur.length - 1} onClick={() => move(i, 1)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-30">↓</button>
+                <button type="button" aria-label={`Remove ${name(id)}`} onClick={() => set(field.key, cur.filter((_, k) => k !== i))} className="grid h-8 w-8 place-items-center rounded-lg text-red-700 hover:bg-red-50">✕</button>
+              </li>
+            ))}
+            {!cur.length ? <li className="rounded-xl border border-dashed border-black/15 px-3 py-3 text-sm text-black/45">Nothing added yet.</li> : null}
+          </ol>
+          <select
+            aria-label={`Add to ${field.label}`}
+            value=""
+            onChange={(e) => e.target.value && set(field.key, [...cur, e.target.value])}
+            className="mt-2 w-full rounded-xl px-3 py-2 text-sm ring-1 ring-black/15"
+          >
+            <option value="">+ Add…</option>
+            {opts.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </select>
+          {help}
+        </fieldset>
+      );
+    }
     case "refs": {
       const opts = lookups[field.source ?? ""] ?? [];
       const cur = Array.isArray(v) ? (v as string[]) : [];

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ChevronDown, Menu, ShoppingBag, X } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
-import { NAV, activeKey, type NavItem } from "@/lib/nav";
+import { activeKey, buildNav, type NavItem } from "@/lib/nav";
 import { openBag, useCart } from "@/lib/cart";
 import { useSettings, parts } from "@/lib/site";
 import { useContent } from "@/lib/useContent";
@@ -144,7 +144,8 @@ export function SiteHeader() {
   const [last, setLast] = useState(pathname);
   const navRef = useRef<HTMLElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const current = activeKey(pathname);
+  const NAV = buildNav(s.menu);
+  const current = activeKey(pathname, NAV);
   const isAdmin = pathname.startsWith("/admin");
 
   if (last !== pathname) {
@@ -195,9 +196,11 @@ export function SiteHeader() {
           </nav>
           <div className="flex items-center gap-2">
             <HeaderBag />
-            <Link href="/contact/#visit" className="btn btn-primary hidden !px-4 !py-2.5 text-sm sm:inline-flex">
-              {s.ctaLabel}
-            </Link>
+            {s.showHeaderCta !== "no" && s.ctaLabel ? (
+              <Link href={s.ctaUrl || "/contact/#visit"} className="btn btn-primary hidden !px-4 !py-2.5 text-sm sm:inline-flex">
+                {s.ctaLabel}
+              </Link>
+            ) : null}
             <button
               ref={btnRef}
               type="button"
@@ -206,7 +209,7 @@ export function SiteHeader() {
               aria-expanded={open}
               aria-controls="mobile-menu"
               onClick={() => {
-                setExpanded(current === "classes" || current === "kids" ? current : null);
+                setExpanded(NAV.find((n) => n.key === current && (n.mega || n.children)) ? current : null);
                 setOpen((o) => !o);
               }}
             >
@@ -287,9 +290,11 @@ export function SiteHeader() {
                   </motion.div>
                 );
               })}
-              <Link href="/contact/#visit" onClick={() => setOpen(false)} className="btn btn-primary mt-3 w-full">
-                {s.ctaLabel}
-              </Link>
+              {s.showHeaderCta !== "no" && s.ctaLabel ? (
+                <Link href={s.ctaUrl || "/contact/#visit"} onClick={() => setOpen(false)} className="btn btn-primary mt-3 w-full">
+                  {s.ctaLabel}
+                </Link>
+              ) : null}
               <p className="mt-2 text-center text-sm font-semibold text-ink/55">{parts(s.serviceTimes[0] ?? "").join(" · ")}</p>
             </nav>
           </motion.div>

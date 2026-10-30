@@ -118,6 +118,12 @@ async function adminRaw<C extends ContentCol>(col: C): Promise<{ value: DocFor<C
   return data as { value: DocFor<C>[]; version: number };
 }
 
+/** Items plus whether the collection has ever been saved (false = still the starter content). */
+export async function adminListMeta<C extends ContentCol>(col: C) {
+  const r = await adminRaw(col);
+  return { items: r.value, saved: r.version !== -1 };
+}
+
 /** All items including drafts (admins only). */
 export async function adminList<C extends ContentCol>(col: C) {
   return (await adminRaw(col)).value;
@@ -172,6 +178,17 @@ export async function adminUpsertMany<C extends ContentCol>(col: C, items: Array
     for (const d of items) docs.unshift({ ...d, createdAt: ts, updatedAt: ts } as DocFor<C>);
     return docs;
   });
+}
+
+/** Change several items at once (bulk publish, reorder…). */
+export async function adminPatchMany<C extends ContentCol>(col: C, patches: Record<string, Record<string, unknown>>) {
+  const ts = new Date().toISOString();
+  await adminMutate(col, (docs) => docs.map((d) => (patches[d.id] ? ({ ...d, ...patches[d.id], updatedAt: ts } as DocFor<C>) : d)));
+}
+
+export async function adminDeleteMany(col: ContentCol, ids: string[]) {
+  const set = new Set(ids);
+  await adminMutate(col, (docs) => docs.filter((d) => !set.has(d.id)));
 }
 
 export async function adminDelete(col: ContentCol, id: string) {
