@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import gsap from "gsap";
 import { ArrowRight, BookOpen, ShieldCheck, Users } from "lucide-react";
 import { Container } from "@/components/site/Container";
@@ -10,14 +10,35 @@ import { parts, useSettings, useCopy } from "@/lib/site";
 import { useContent } from "@/lib/useContent";
 import { classLessons } from "@/lib/format";
 
-/** Types the rotating words: Know → Love → Live. */
-function TypedWord({ words }: { words: string[] }) {
+const RM = "(prefers-reduced-motion: reduce)";
+function subscribeRM(cb: () => void) {
+  const mq = window.matchMedia(RM);
+  mq.addEventListener?.("change", cb);
+  return () => mq.removeEventListener?.("change", cb);
+}
+
+/**
+ * Rotating words after the headline (Know → Love → Live).
+ * "type" types and deletes letter by letter; "fade" cross-fades whole words. Devices that ask for
+ * reduced motion (common on Windows, Mac and iPad) get the gentle fade instead of a frozen word.
+ */
+function TypedWord({ words: raw, mode = "type", speed = 1 }: { words: string[]; mode?: string; speed?: number }) {
+  const words = (raw ?? []).map((w) => String(w).trim()).filter(Boolean);
+  const key = words.join("|");
   const [i, setI] = useState(0);
   const [n, setN] = useState(words[0]?.length ?? 0);
   const [del, setDel] = useState(false);
+  const reduced = useSyncExternalStore(subscribeRM, () => window.matchMedia(RM).matches, () => false);
+  const [shown, setShown] = useState(true);
+
+  const effective = mode === "static" || words.length < 2 ? "static" : reduced || mode === "fade" ? "fade" : "type";
+  const k = Math.max(0.4, Math.min(3, speed || 1));
+
+  // typing
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || words.length < 2) return;
-    const w = words[i % words.length];
+    if (effective !== "type") return;
+    const list = key.split("|");
+    const w = list[i % list.length] ?? "";
     const t = setTimeout(
       () => {
         if (!del && n < w.length) setN(n + 1);
@@ -25,18 +46,33 @@ function TypedWord({ words }: { words: string[] }) {
         else if (n > 0) setN(n - 1);
         else {
           setDel(false);
-          setI(i + 1);
+          setI((x) => x + 1);
         }
       },
-      !del && n === w.length ? 1600 : del ? 60 : 110,
+      (!del && n === w.length ? 1600 : del ? 55 : 105) / k,
     );
     return () => clearTimeout(t);
-  }, [i, n, del, words]);
-  const w = words[i % words.length] ?? "";
+  }, [effective, i, n, del, key, k]);
+
+  // fading
+  useEffect(() => {
+    if (effective !== "fade") return;
+    const out = setTimeout(() => setShown(false), 2200 / k);
+    const next = setTimeout(() => { setI((x) => x + 1); setShown(true); }, 2600 / k);
+    return () => { clearTimeout(out); clearTimeout(next); };
+  }, [effective, i, k]);
+
+  const w = words[i % Math.max(1, words.length)] ?? "";
   return (
-    <span className="text-blueBrand-600">
-      <span aria-hidden>{w.slice(0, n)}</span>
-      <span aria-hidden className="ml-0.5 inline-block w-[3px] animate-pulse bg-blueBrand-600 align-[-0.05em]" style={{ height: "0.85em" }} />
+    <span className="text-blueBrand-600" data-typed={effective}>
+      {effective === "type" ? (
+        <>
+          <span aria-hidden>{w.slice(0, n)}</span>
+          <span aria-hidden className="ml-0.5 inline-block w-[3px] animate-pulse bg-blueBrand-600 align-[-0.05em]" style={{ height: "0.85em" }} />
+        </>
+      ) : (
+        <span aria-hidden className="inline-block transition-[opacity,transform] duration-300 ease-out" style={{ opacity: shown ? 1 : 0, transform: shown || reduced ? "none" : "translateY(0.12em)" }}>{w}</span>
+      )}
       <span className="sr-only">{words.join(", ")}</span>
     </span>
   );
@@ -71,7 +107,7 @@ export function Hero() {
           </div>
           <h1 className="mt-5 font-display text-[2.9rem] font-extrabold leading-[0.98] sm:text-7xl lg:text-[5.4rem]">
             <span data-h style={{ "--i": 1 } as React.CSSProperties} className="block">{[title1, ...rest].join(" ")}</span>
-            <span data-h style={{ "--i": 2 } as React.CSSProperties} className="block min-h-[1em]"><TypedWord words={s.heroWords} /></span>
+            <span data-h style={{ "--i": 2 } as React.CSSProperties} className="block min-h-[1em]"><TypedWord words={s.heroWords} mode={s.heroWordsEffect} speed={Number(s.heroWordsSpeed) || 1} /></span>
             <span data-h style={{ "--i": 3 } as React.CSSProperties} className="block"><span className="squiggle text-blueBrand-600">{t("home.hero.highlight")}</span></span>
           </h1>
           <p data-h style={{ "--i": 4 } as React.CSSProperties} className="mt-6 max-w-lg text-lg leading-8 text-ink/65">{s.heroSubtitle}</p>

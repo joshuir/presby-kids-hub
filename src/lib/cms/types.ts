@@ -245,6 +245,9 @@ export type SiteSettingsDoc = BaseDoc & {
   /** 3d | flat | outline */
   buttonStyle?: string;
   logoUrl?: string;
+  /** type | fade | static */
+  heroWordsEffect?: string;
+  heroWordsSpeed?: number;
   /* ---- structure ---- */
   menu?: MenuItem[];
   ctaUrl?: string;

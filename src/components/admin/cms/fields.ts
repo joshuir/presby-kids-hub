@@ -67,6 +67,8 @@ export const SCHEMAS: Record<Exclude<CollectionName, "leaderboard">, Field[]> = 
     { key: "heroBadge", label: "Home — badge above the headline", type: "text" },
     { key: "heroTitle", label: "Home — headline (first line)", type: "text" },
     { key: "heroWords", label: "Home — typed words (one per line)", type: "lines" },
+    { key: "heroWordsEffect", label: "Home — how the words change", type: "select", options: ["type", "fade", "static"], help: "type = typed letter by letter · fade = whole words fade in turn · static = first word only. Visitors whose device asks for reduced motion always get the gentle fade." },
+    { key: "heroWordsSpeed", label: "Home — word speed (1 = normal, 2 = twice as fast, 0.5 = slower)", type: "number" },
     { key: "heroSubtitle", label: "Home — subtitle", type: "textarea", wide: true },
     { key: "heroImage", label: "Home — hero photo (optional; replaces the illustration)", type: "media" },
     { key: "serviceTimes", label: "Service times (one per line: Name|Time)", type: "lines", wide: true },
